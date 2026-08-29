@@ -345,33 +345,47 @@ export default function PublicWebsite() {
               </div>
               <div className="lg:col-span-7 z-10 h-96 w-full rounded-3xl overflow-hidden shadow-lg relative reveal-mask border border-outline-variant/30 group">
                 {(() => {
-                  let mapUrl = contact?.map_link || '';
-                  if (mapUrl.includes('<iframe')) {
-                    const match = mapUrl.match(/src=["']([^"']+)["']/);
-                    if (match && match[1]) mapUrl = match[1];
+                  let rawMapUrl = contact?.map_link || '';
+                  if (rawMapUrl.includes('<iframe')) {
+                    const match = rawMapUrl.match(/src=["']([^"']+)["']/);
+                    if (match && match[1]) rawMapUrl = match[1];
                   }
-                  
-                  const isEmbed = mapUrl.includes('embed') || mapUrl.includes('maps/embed') || mapUrl.includes('output=embed');
 
-                  // Extract location query for external link if available, fallback to full search query
-                  let externalUrl = mapUrl;
-                  if (isEmbed) {
-                    const qParam = new URLSearchParams(mapUrl.split('?')[1] || '').get('q');
-                    if (qParam) {
-                      externalUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(qParam)}`;
+                  const dynamicQuery = [
+                    contact?.address_display,
+                    contact?.locations?.join(' '),
+                    contact?.city
+                  ].filter(Boolean).join(', ') || 'LIVF Fertility, Chennai';
+
+                  let embedSrc = '';
+                  let externalUrl = '';
+
+                  if (rawMapUrl) {
+                    if (rawMapUrl.includes('embed') || rawMapUrl.includes('output=embed')) {
+                      embedSrc = rawMapUrl;
+                      const qParam = new URLSearchParams(rawMapUrl.split('?')[1] || '').get('q');
+                      if (qParam) {
+                        externalUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(qParam)}`;
+                      } else {
+                        externalUrl = rawMapUrl;
+                      }
+                    } else if (rawMapUrl.startsWith('http://') || rawMapUrl.startsWith('https://')) {
+                      externalUrl = rawMapUrl;
+                      embedSrc = `https://maps.google.com/maps?q=${encodeURIComponent(rawMapUrl)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
                     } else {
-                      externalUrl = mapUrl.replace(/(\/embed|output=embed)/g, '');
+                      embedSrc = `https://maps.google.com/maps?q=${encodeURIComponent(rawMapUrl)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+                      externalUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rawMapUrl)}`;
                     }
-                  }
-                  if (!externalUrl) {
-                    externalUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${contact?.locations?.[0] || 'LIVF Fertility'}, ${contact?.city || 'Chennai'}`)}`;
+                  } else {
+                    embedSrc = `https://maps.google.com/maps?q=${encodeURIComponent(dynamicQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+                    externalUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dynamicQuery)}`;
                   }
 
-                  return isEmbed ? (
+                  return (
                     <div className="w-full h-full relative">
                       <iframe
                         title="Clinic Google Map Location"
-                        src={mapUrl}
+                        src={embedSrc}
                         className="w-full h-full border-0"
                         allowFullScreen=""
                         loading="lazy"
@@ -385,28 +399,10 @@ export default function PublicWebsite() {
                       >
                         <div className="px-5 py-2.5 bg-primary text-on-primary font-label-md rounded-2xl shadow-2xl flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
                           <span className="material-symbols-outlined text-lg">open_in_new</span>
-                          <span className="font-semibold tracking-wide text-xs">View Location</span>
+                          <span className="font-semibold tracking-wide text-xs font-label-md">View Location</span>
                         </div>
                       </a>
                     </div>
-                  ) : (
-                    <a
-                      href={externalUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="block w-full h-full relative overflow-hidden interactive-element cursor-pointer"
-                    >
-                      <div
-                        className="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                        style={{ backgroundImage: `url('${contact?.map_image_url || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDJ7sUBYZZGU8sNk6XdICTUPoKDWeT6Erbb7M12MD1qT7oTTkX0qfS1paLQy9s_uPaWxsqGY7KNVOA61gT8XsUjUwnRItiGVPLOarn6NldL6pFoNzY87EUPdGvChpks6IZDimOCP_EYB5vyWQoJyHr_YFIlOsCKjNTxMRlK-7pOmt4iioKDhVVmrMLPR3loQvFntt5Af_5vUGakOUK2t_wCa-xxZyT7KTZHLirr0z-p16Lo322bGraF'}')` }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-40 group-hover:opacity-80 transition-opacity duration-300 flex items-center justify-center">
-                        <div className="px-5 py-2.5 bg-primary text-on-primary font-label-md rounded-2xl shadow-2xl flex items-center gap-2 transform translate-y-3 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                          <span className="material-symbols-outlined text-lg">near_me</span>
-                          <span className="font-semibold text-xs tracking-wide font-label-md">View Location</span>
-                        </div>
-                      </div>
-                    </a>
                   );
                 })()}
               </div>

@@ -59,7 +59,7 @@ const INITIAL_DATA = {
     address_display: 'Level 4, Specialist Medical Centre',
     email: 'contact@drthalluru.com',
     map_image_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDJ7sUBYZZGU8sNk6XdICTUPoKDWeT6Erbb7M12MD1qT7oTTkX0qfS1paLQy9s_uPaWxsqGY7KNVOA61gT8XsUjUwnRItiGVPLOarn6NldL6pFoNzY87EUPdGvChpks6IZDimOCP_EYB5vyWQoJyHr_YFIlOsCKjNTxMRlK-7pOmt4iioKDhVVmrMLPR3loQvFntt5Af_5vUGakOUK2t_wCa-xxZyT7KTZHLirr0z-p16Lo322bGraF',
-    map_link: 'https://maps.google.com/?q=LIVF+Fertility+Perungudi+Chennai'
+    map_link: 'https://maps.google.com/maps?q=LIVF+Fertility+Chennai&t=&z=15&ie=UTF8&iwloc=&output=embed'
   }
 };
 

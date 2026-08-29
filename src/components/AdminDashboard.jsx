@@ -843,7 +843,20 @@ export default function AdminDashboard({ onLogout }) {
                 <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
                   <button
                     type="button"
-                    onClick={() => setMapPickerModal(true)}
+                    onClick={() => {
+                      let initialQuery = '';
+                      if (contact.map_link && !contact.map_link.includes('<iframe') && !contact.map_link.includes('http')) {
+                        initialQuery = contact.map_link;
+                      } else if (contact.address_display) {
+                        initialQuery = `${contact.address_display}${contact.city ? ', ' + contact.city : ''}`;
+                      } else if (contact.locations?.length) {
+                        initialQuery = `${contact.locations.join(' & ')}${contact.city ? ', ' + contact.city : ''}`;
+                      } else {
+                        initialQuery = contact.city || 'Chennai';
+                      }
+                      setMapSearchQuery(initialQuery);
+                      setMapPickerModal(true);
+                    }}
                     className="px-5 py-3 bg-primary text-on-primary rounded-xl font-label-md text-xs flex items-center gap-2 hover:opacity-95 transition-all shadow-md"
                   >
                     <span className="material-symbols-outlined text-sm">location_on</span>
@@ -857,15 +870,15 @@ export default function AdminDashboard({ onLogout }) {
                 </div>
 
                 <div className="pt-2 space-y-1">
-                  <label className="text-[11px] text-on-surface-variant font-medium">Map Link or Embed URL:</label>
+                  <label className="text-[11px] text-on-surface-variant font-medium">Map Link or Embed URL / Search Query:</label>
                   <input
                     type="text"
-                    placeholder="https://maps.google.com/?q=... or <iframe src='...'></iframe>"
+                    placeholder="https://maps.google.com/?q=... or <iframe src='...'></iframe> or clinic search query"
                     value={contact.map_link || ''}
                     onChange={e => setContact({ ...contact, map_link: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface"
                   />
-                  <p className="text-[11px] text-on-surface-variant">Use the 'Choose Location' button to search & select your clinic directly on Google Maps, or manually paste a map link/iframe code above.</p>
+                  <p className="text-[11px] text-on-surface-variant">Use the 'Choose Location' button to search & select your clinic directly on Google Maps, or paste any map link / embed code / address text above.</p>
                 </div>
               </div>
 
@@ -888,7 +901,7 @@ export default function AdminDashboard({ onLogout }) {
             <div className="p-6 bg-surface-container-low border-b border-outline-variant/30 flex items-center justify-between">
               <div>
                 <h3 className="font-display-lg text-primary text-xl font-bold">Pick & Search Clinic Location on Google Maps</h3>
-                <p className="text-xs text-on-surface-variant mt-0.5">Search any location/clinic below, preview on the live map, then click "Confirm & Use This Location".</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">Search any location, clinic name, or street below, preview on the live map, then click "Confirm & Use This Location".</p>
               </div>
               <button
                 onClick={() => setMapPickerModal(false)}
@@ -904,16 +917,26 @@ export default function AdminDashboard({ onLogout }) {
                 <span className="material-symbols-outlined absolute left-3 top-2.5 text-on-surface-variant text-lg">search</span>
                 <input
                   type="text"
-                  placeholder="Search clinic name, street, area, or city (e.g. Apollo Hospital Greams Road, Chennai)"
+                  placeholder="Search clinic name, hospital, street, or area (e.g. Apollo Hospital Greams Road, Chennai)"
                   value={mapSearchQuery}
                   onChange={e => setMapSearchQuery(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const activeQuery = mapSearchQuery.trim() || `${contact.address_display || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`;
+                      const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(activeQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+                      setContact(prev => ({ ...prev, map_link: embedUrl }));
+                      setMapPickerModal(false);
+                      showNotice(`Location set to "${activeQuery}"! Click "Save Contact Details" to publish.`, 'success');
+                    }
+                  }}
                   className="w-full pl-10 pr-4 py-2 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface focus:outline-none focus:border-primary"
                 />
               </div>
               <button
                 type="button"
                 onClick={() => {
-                  const activeQuery = mapSearchQuery || `${contact.locations?.[0] || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`;
+                  const activeQuery = mapSearchQuery.trim() || `${contact.address_display || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`;
                   const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(activeQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
                   setContact(prev => ({ ...prev, map_link: embedUrl }));
                   setMapPickerModal(false);
@@ -928,7 +951,7 @@ export default function AdminDashboard({ onLogout }) {
 
             <div className="flex-1 min-h-[380px] relative bg-surface-container-low">
               {(() => {
-                const activeQuery = mapSearchQuery || `${contact.locations?.[0] || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`;
+                const activeQuery = mapSearchQuery.trim() || `${contact.address_display || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`;
                 return (
                   <iframe
                     title="Google Maps Location Picker"
@@ -943,13 +966,13 @@ export default function AdminDashboard({ onLogout }) {
 
             <div className="p-5 bg-surface border-t border-outline-variant/30 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-xs text-on-surface-variant">
-                <span className="font-semibold text-on-surface">Active Location Preview:</span> {mapSearchQuery || `${contact.locations?.[0] || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`}
+                <span className="font-semibold text-on-surface">Active Location Preview:</span> {mapSearchQuery.trim() || `${contact.address_display || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`}
               </div>
               <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
                 <button
                   type="button"
                   onClick={() => {
-                    const activeQuery = mapSearchQuery || `${contact.locations?.[0] || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`;
+                    const activeQuery = mapSearchQuery.trim() || `${contact.address_display || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`;
                     window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activeQuery)}`, '_blank');
                   }}
                   className="px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl font-label-md text-xs hover:bg-surface-container-highest transition-colors flex items-center gap-1.5"
@@ -960,11 +983,11 @@ export default function AdminDashboard({ onLogout }) {
                 <button
                   type="button"
                   onClick={() => {
-                    const activeQuery = mapSearchQuery || `${contact.locations?.[0] || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`;
+                    const activeQuery = mapSearchQuery.trim() || `${contact.address_display || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`;
                     const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(activeQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
                     setContact(prev => ({ ...prev, map_link: embedUrl }));
                     setMapPickerModal(false);
-                    showNotice('Location confirmed! Click "Save Contact Details" to publish.', 'success');
+                    showNotice(`Location set to "${activeQuery}"! Click "Save Contact Details" to publish.`, 'success');
                   }}
                   className="px-5 py-2.5 bg-primary text-on-primary rounded-xl font-label-md text-xs shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 font-bold"
                 >
