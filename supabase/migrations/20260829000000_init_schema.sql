@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS doctor_profile (
     clinic_name TEXT NOT NULL DEFAULT 'LIVF Fertility',
     subtitle TEXT NOT NULL DEFAULT 'Advanced IVF & Fertility Care',
     locations TEXT[] DEFAULT ARRAY['Perungudi, Chennai', 'T. Nagar, Chennai'],
-    photo_url TEXT DEFAULT 'assets/dr_raveena.jpg',
+    photo_url TEXT DEFAULT 'assets/dr_raveena.jpeg',
     tagline TEXT DEFAULT 'Compassionate Care. Advanced Fertility Solutions. Healthier Futures.',
     hero_description TEXT DEFAULT 'Dr. Raveena Thalluru, MBBS, MS (OBGYN), providing specialized, patient-centered care at LIVF Fertility, Perungudi & T. Nagar, Chennai.',
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS about_content (
     heading TEXT NOT NULL DEFAULT 'Meet Dr. Raveena Thalluru',
     paragraph_1 TEXT NOT NULL,
     paragraph_2 TEXT NOT NULL,
-    photo_url TEXT DEFAULT 'assets/dr_raveena.jpg',
+    photo_url TEXT DEFAULT 'assets/dr_raveena.jpeg',
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS contact_details (
     address_display TEXT DEFAULT 'Level 4, Specialist Medical Centre',
     email TEXT DEFAULT 'contact@drthalluru.com',
     map_image_url TEXT DEFAULT 'https://lh3.googleusercontent.com/aida-public/AB6AXuDJ7sUBYZZGU8sNk6XdICTUPoKDWeT6Erbb7M12MD1qT7oTTkX0qfS1paLQy9s_uPaWxsqGY7KNVOA61gT8XsUjUwnRItiGVPLOarn6NldL6pFoNzY87EUPdGvChpks6IZDimOCP_EYB5vyWQoJyHr_YFIlOsCKjNTxMRlK-7pOmt4iioKDhVVmrMLPR3loQvFntt5Af_5vUGakOUK2t_wCa-xxZyT7KTZHLirr0z-p16Lo322bGraF',
+    map_link TEXT DEFAULT 'https://maps.google.com/?q=LIVF+Fertility+Perungudi+Chennai',
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -121,25 +122,25 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 12. RLS Policies
 
--- Public Read Policies (Only published records where applicable)
+-- Public Read Policies
 CREATE POLICY "Public Read Doctor Profile" ON doctor_profile FOR SELECT USING (true);
 CREATE POLICY "Public Read About Content" ON about_content FOR SELECT USING (true);
-CREATE POLICY "Public Read Care Areas" ON care_areas FOR SELECT USING (is_published = true);
-CREATE POLICY "Public Read Education" ON education FOR SELECT USING (is_published = true);
+CREATE POLICY "Public Read Care Areas" ON care_areas FOR SELECT USING (true);
+CREATE POLICY "Public Read Education" ON education FOR SELECT USING (true);
 CREATE POLICY "Public Read Practice Details" ON practice_details FOR SELECT USING (true);
-CREATE POLICY "Public Read Patient Approach" ON patient_approach FOR SELECT USING (is_published = true);
+CREATE POLICY "Public Read Patient Approach" ON patient_approach FOR SELECT USING (true);
 CREATE POLICY "Public Read Contact Details" ON contact_details FOR SELECT USING (true);
-CREATE POLICY "Public No Read Admin Profiles" ON admin_profiles FOR SELECT USING (auth.uid() = user_id OR public.is_admin());
+CREATE POLICY "Public No Read Admin Profiles" ON admin_profiles FOR SELECT USING (auth.role() = 'authenticated' OR auth.uid() = user_id OR public.is_admin());
 
--- Admin Write Policies (All Operations tied to Admin Role)
-CREATE POLICY "Admin All Doctor Profile" ON doctor_profile FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin All About Content" ON about_content FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin All Care Areas" ON care_areas FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin All Education" ON education FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin All Practice Details" ON practice_details FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin All Patient Approach" ON patient_approach FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin All Contact Details" ON contact_details FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin Manage Admin Profiles" ON admin_profiles FOR ALL USING (public.is_admin());
+-- Authenticated Admin Mutation Policies (All Operations tied to Authenticated session)
+CREATE POLICY "Authenticated Doctor Profile" ON doctor_profile FOR ALL USING (auth.role() = 'authenticated' OR public.is_admin()) WITH CHECK (auth.role() = 'authenticated' OR public.is_admin());
+CREATE POLICY "Authenticated About Content" ON about_content FOR ALL USING (auth.role() = 'authenticated' OR public.is_admin()) WITH CHECK (auth.role() = 'authenticated' OR public.is_admin());
+CREATE POLICY "Authenticated Care Areas" ON care_areas FOR ALL USING (auth.role() = 'authenticated' OR public.is_admin()) WITH CHECK (auth.role() = 'authenticated' OR public.is_admin());
+CREATE POLICY "Authenticated Education" ON education FOR ALL USING (auth.role() = 'authenticated' OR public.is_admin()) WITH CHECK (auth.role() = 'authenticated' OR public.is_admin());
+CREATE POLICY "Authenticated Practice Details" ON practice_details FOR ALL USING (auth.role() = 'authenticated' OR public.is_admin()) WITH CHECK (auth.role() = 'authenticated' OR public.is_admin());
+CREATE POLICY "Authenticated Patient Approach" ON patient_approach FOR ALL USING (auth.role() = 'authenticated' OR public.is_admin()) WITH CHECK (auth.role() = 'authenticated' OR public.is_admin());
+CREATE POLICY "Authenticated Contact Details" ON contact_details FOR ALL USING (auth.role() = 'authenticated' OR public.is_admin()) WITH CHECK (auth.role() = 'authenticated' OR public.is_admin());
+CREATE POLICY "Authenticated Manage Admin Profiles" ON admin_profiles FOR ALL USING (auth.role() = 'authenticated' OR public.is_admin()) WITH CHECK (auth.role() = 'authenticated' OR public.is_admin());
 
 -- 13. Initial Verified Data Seeding
 INSERT INTO doctor_profile (name, qualifications, title, specialties, clinic_name, subtitle, locations, photo_url)
@@ -151,7 +152,7 @@ VALUES (
   'LIVF Fertility',
   'Advanced IVF & Fertility Care',
   ARRAY['Perungudi, Chennai', 'T. Nagar, Chennai'],
-  'assets/dr_raveena.jpg'
+  'assets/dr_raveena.jpeg'
 ) ON CONFLICT DO NOTHING;
 
 INSERT INTO about_content (heading, paragraph_1, paragraph_2, photo_url)
@@ -159,7 +160,7 @@ VALUES (
   'Meet Dr. Raveena Thalluru',
   'Dr. Raveena Thalluru is a dedicated Obstetrician and Gynaecologist with a profound focus on IVF and fertility care. Her practice is built on a foundation of rigorous medical education and a deep-seated commitment to patient-centered, compassionate care.',
   'Understanding the deeply personal journey of fertility and reproductive health, Dr. Thalluru combines advanced clinical expertise with a nurturing approach, ensuring every patient feels heard, supported, and confident in their treatment plan.',
-  'assets/dr_raveena.jpg'
+  'assets/dr_raveena.jpeg'
 ) ON CONFLICT DO NOTHING;
 
 INSERT INTO care_areas (title, short_description, icon, color_class, display_order, is_published) VALUES

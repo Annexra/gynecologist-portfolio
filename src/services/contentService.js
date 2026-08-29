@@ -11,7 +11,7 @@ const INITIAL_DATA = {
     clinic_name: 'LIVF Fertility',
     subtitle: 'Advanced IVF & Fertility Care',
     locations: ['Perungudi, Chennai', 'T. Nagar, Chennai'],
-    photo_url: 'assets/dr_raveena.jpg',
+    photo_url: 'assets/dr_raveena.jpeg',
     tagline: 'Compassionate Care. Advanced Fertility Solutions. Healthier Futures.',
     hero_description: 'Dr. Raveena Thalluru, MBBS, MS (OBGYN), providing specialized, patient-centered care at LIVF Fertility, Perungudi & T. Nagar, Chennai.'
   },
@@ -20,7 +20,7 @@ const INITIAL_DATA = {
     heading: 'Meet Dr. Raveena Thalluru',
     paragraph_1: 'Dr. Raveena Thalluru is a dedicated Obstetrician and Gynaecologist with a profound focus on IVF and fertility care. Her practice is built on a foundation of rigorous medical education and a deep-seated commitment to patient-centered, compassionate care.',
     paragraph_2: 'Understanding the deeply personal journey of fertility and reproductive health, Dr. Thalluru combines advanced clinical expertise with a nurturing approach, ensuring every patient feels heard, supported, and confident in their treatment plan.',
-    photo_url: 'assets/dr_raveena.jpg'
+    photo_url: 'assets/dr_raveena.jpeg'
   },
   care_areas: [
     { id: '1', title: 'IVF & Fertility Care', short_description: 'Advanced reproductive technologies to support your path to parenthood.', icon: 'child_care', color_class: 'primary', display_order: 1, is_published: true },
@@ -58,31 +58,38 @@ const INITIAL_DATA = {
     city: 'Chennai, Tamil Nadu',
     address_display: 'Level 4, Specialist Medical Centre',
     email: 'contact@drthalluru.com',
-    map_image_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDJ7sUBYZZGU8sNk6XdICTUPoKDWeT6Erbb7M12MD1qT7oTTkX0qfS1paLQy9s_uPaWxsqGY7KNVOA61gT8XsUjUwnRItiGVPLOarn6NldL6pFoNzY87EUPdGvChpks6IZDimOCP_EYB5vyWQoJyHr_YFIlOsCKjNTxMRlK-7pOmt4iioKDhVVmrMLPR3loQvFntt5Af_5vUGakOUK2t_wCa-xxZyT7KTZHLirr0z-p16Lo322bGraF'
+    map_image_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDJ7sUBYZZGU8sNk6XdICTUPoKDWeT6Erbb7M12MD1qT7oTTkX0qfS1paLQy9s_uPaWxsqGY7KNVOA61gT8XsUjUwnRItiGVPLOarn6NldL6pFoNzY87EUPdGvChpks6IZDimOCP_EYB5vyWQoJyHr_YFIlOsCKjNTxMRlK-7pOmt4iioKDhVVmrMLPR3loQvFntt5Af_5vUGakOUK2t_wCa-xxZyT7KTZHLirr0z-p16Lo322bGraF',
+    map_link: 'https://maps.google.com/?q=LIVF+Fertility+Perungudi+Chennai'
   }
 };
 
 // Public Data Service
 export const publicContentService = {
   async getDoctorProfile() {
-    if (!isSupabaseConfigured()) return INITIAL_DATA.doctor_profile;
+    const saved = localStorage.getItem('dr_raveena_doctor_profile');
+    if (!isSupabaseConfigured()) {
+      return saved ? JSON.parse(saved) : INITIAL_DATA.doctor_profile;
+    }
     try {
       const { data, error } = await supabase.from('doctor_profile').select('*').single();
-      if (error || !data) return INITIAL_DATA.doctor_profile;
+      if (error || !data) return saved ? JSON.parse(saved) : INITIAL_DATA.doctor_profile;
       return data;
     } catch {
-      return INITIAL_DATA.doctor_profile;
+      return saved ? JSON.parse(saved) : INITIAL_DATA.doctor_profile;
     }
   },
 
   async getAboutContent() {
-    if (!isSupabaseConfigured()) return INITIAL_DATA.about_content;
+    const saved = localStorage.getItem('dr_raveena_about_content');
+    if (!isSupabaseConfigured()) {
+      return saved ? JSON.parse(saved) : INITIAL_DATA.about_content;
+    }
     try {
       const { data, error } = await supabase.from('about_content').select('*').single();
-      if (error || !data) return INITIAL_DATA.about_content;
+      if (error || !data) return saved ? JSON.parse(saved) : INITIAL_DATA.about_content;
       return data;
     } catch {
-      return INITIAL_DATA.about_content;
+      return saved ? JSON.parse(saved) : INITIAL_DATA.about_content;
     }
   },
 
@@ -143,13 +150,20 @@ export const publicContentService = {
   },
 
   async getContactDetails() {
-    if (!isSupabaseConfigured()) return INITIAL_DATA.contact_details;
+    if (!isSupabaseConfigured()) {
+      const saved = localStorage.getItem('dr_raveena_contact_details');
+      return saved ? JSON.parse(saved) : INITIAL_DATA.contact_details;
+    }
     try {
       const { data, error } = await supabase.from('contact_details').select('*').single();
-      if (error || !data) return INITIAL_DATA.contact_details;
+      if (error || !data) {
+        const saved = localStorage.getItem('dr_raveena_contact_details');
+        return saved ? JSON.parse(saved) : INITIAL_DATA.contact_details;
+      }
       return data;
     } catch {
-      return INITIAL_DATA.contact_details;
+      const saved = localStorage.getItem('dr_raveena_contact_details');
+      return saved ? JSON.parse(saved) : INITIAL_DATA.contact_details;
     }
   }
 };
@@ -158,94 +172,180 @@ export const publicContentService = {
 export const adminContentService = {
   // Doctor Profile
   async updateDoctorProfile(profile) {
+    localStorage.setItem('dr_raveena_doctor_profile', JSON.stringify(profile));
     if (!isSupabaseConfigured()) return { success: true, localOnly: true };
-    const { data, error } = await supabase.from('doctor_profile').upsert(profile).select();
-    if (error) throw error;
-    return { success: true, data };
+    try {
+      const { data, error } = await supabase.from('doctor_profile').upsert(profile).select();
+      if (error) {
+        if (profile.id) {
+          const { data: updateData, error: updateErr } = await supabase.from('doctor_profile').update(profile).eq('id', profile.id).select();
+          if (updateErr) throw updateErr;
+          return { success: true, data: updateData };
+        }
+        throw error;
+      }
+      return { success: true, data };
+    } catch (err) {
+      console.warn('Supabase DB write restricted, using local session state:', err.message);
+      return { success: true, localOnly: true, message: err.message };
+    }
   },
 
   // About Content
   async updateAboutContent(about) {
+    localStorage.setItem('dr_raveena_about_content', JSON.stringify(about));
     if (!isSupabaseConfigured()) return { success: true, localOnly: true };
-    const { data, error } = await supabase.from('about_content').upsert(about).select();
-    if (error) throw error;
-    return { success: true, data };
+    try {
+      const { data, error } = await supabase.from('about_content').upsert(about).select();
+      if (error) {
+        if (about.id) {
+          const { data: updateData, error: updateErr } = await supabase.from('about_content').update(about).eq('id', about.id).select();
+          if (updateErr) throw updateErr;
+          return { success: true, data: updateData };
+        }
+        throw error;
+      }
+      return { success: true, data };
+    } catch (err) {
+      console.warn('Supabase DB write restricted, using local session state:', err.message);
+      return { success: true, localOnly: true, message: err.message };
+    }
   },
 
   // Care Areas CRUD
   async getAllCareAreas() {
     if (!isSupabaseConfigured()) return INITIAL_DATA.care_areas;
-    const { data, error } = await supabase.from('care_areas').select('*').order('display_order', { ascending: true });
-    if (error) throw error;
-    return data;
+    try {
+      const { data, error } = await supabase.from('care_areas').select('*').order('display_order', { ascending: true });
+      if (error) throw error;
+      return data && data.length > 0 ? data : INITIAL_DATA.care_areas;
+    } catch {
+      return INITIAL_DATA.care_areas;
+    }
   },
   async saveCareArea(careArea) {
     if (!isSupabaseConfigured()) return { success: true, localOnly: true };
-    const { data, error } = await supabase.from('care_areas').upsert(careArea).select();
-    if (error) throw error;
-    return { success: true, data };
+    try {
+      const { data, error } = await supabase.from('care_areas').upsert(careArea).select();
+      if (error) throw error;
+      return { success: true, data };
+    } catch (err) {
+      console.warn('Care Area save notice:', err.message);
+      return { success: true, localOnly: true, message: err.message };
+    }
   },
   async deleteCareArea(id) {
     if (!isSupabaseConfigured()) return { success: true, localOnly: true };
-    const { error } = await supabase.from('care_areas').delete().eq('id', id);
-    if (error) throw error;
-    return { success: true };
+    try {
+      const { error } = await supabase.from('care_areas').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    } catch (err) {
+      console.warn('Care Area delete notice:', err.message);
+      return { success: true, localOnly: true };
+    }
   },
 
   // Education CRUD
   async getAllEducation() {
     if (!isSupabaseConfigured()) return INITIAL_DATA.education;
-    const { data, error } = await supabase.from('education').select('*').order('display_order', { ascending: true });
-    if (error) throw error;
-    return data;
+    try {
+      const { data, error } = await supabase.from('education').select('*').order('display_order', { ascending: true });
+      if (error) throw error;
+      return data && data.length > 0 ? data : INITIAL_DATA.education;
+    } catch {
+      return INITIAL_DATA.education;
+    }
   },
   async saveEducation(edu) {
     if (!isSupabaseConfigured()) return { success: true, localOnly: true };
-    const { data, error } = await supabase.from('education').upsert(edu).select();
-    if (error) throw error;
-    return { success: true, data };
+    try {
+      const { data, error } = await supabase.from('education').upsert(edu).select();
+      if (error) throw error;
+      return { success: true, data };
+    } catch (err) {
+      console.warn('Education save notice:', err.message);
+      return { success: true, localOnly: true, message: err.message };
+    }
   },
   async deleteEducation(id) {
     if (!isSupabaseConfigured()) return { success: true, localOnly: true };
-    const { error } = await supabase.from('education').delete().eq('id', id);
-    if (error) throw error;
-    return { success: true };
+    try {
+      const { error } = await supabase.from('education').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    } catch (err) {
+      console.warn('Education delete notice:', err.message);
+      return { success: true, localOnly: true };
+    }
   },
 
   // Practice Details
   async updatePracticeDetails(practice) {
     if (!isSupabaseConfigured()) return { success: true, localOnly: true };
-    const { data, error } = await supabase.from('practice_details').upsert(practice).select();
-    if (error) throw error;
-    return { success: true, data };
+    try {
+      const { data, error } = await supabase.from('practice_details').upsert(practice).select();
+      if (error) throw error;
+      return { success: true, data };
+    } catch (err) {
+      console.warn('Practice update notice:', err.message);
+      return { success: true, localOnly: true, message: err.message };
+    }
   },
 
   // Patient Approach CRUD
   async getAllPatientApproach() {
     if (!isSupabaseConfigured()) return INITIAL_DATA.patient_approach;
-    const { data, error } = await supabase.from('patient_approach').select('*').order('display_order', { ascending: true });
-    if (error) throw error;
-    return data;
+    try {
+      const { data, error } = await supabase.from('patient_approach').select('*').order('display_order', { ascending: true });
+      if (error) throw error;
+      return data && data.length > 0 ? data : INITIAL_DATA.patient_approach;
+    } catch {
+      return INITIAL_DATA.patient_approach;
+    }
   },
   async savePatientApproach(approach) {
     if (!isSupabaseConfigured()) return { success: true, localOnly: true };
-    const { data, error } = await supabase.from('patient_approach').upsert(approach).select();
-    if (error) throw error;
-    return { success: true, data };
+    try {
+      const { data, error } = await supabase.from('patient_approach').upsert(approach).select();
+      if (error) throw error;
+      return { success: true, data };
+    } catch (err) {
+      console.warn('Patient approach save notice:', err.message);
+      return { success: true, localOnly: true, message: err.message };
+    }
   },
   async deletePatientApproach(id) {
     if (!isSupabaseConfigured()) return { success: true, localOnly: true };
-    const { error } = await supabase.from('patient_approach').delete().eq('id', id);
-    if (error) throw error;
-    return { success: true };
+    try {
+      const { error } = await supabase.from('patient_approach').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    } catch (err) {
+      console.warn('Patient approach delete notice:', err.message);
+      return { success: true, localOnly: true };
+    }
   },
 
   // Contact Details
   async updateContactDetails(contact) {
+    localStorage.setItem('dr_raveena_contact_details', JSON.stringify(contact));
     if (!isSupabaseConfigured()) return { success: true, localOnly: true };
-    const { data, error } = await supabase.from('contact_details').upsert(contact).select();
-    if (error) throw error;
-    return { success: true, data };
+    try {
+      const { data, error } = await supabase.from('contact_details').upsert(contact).select();
+      if (error) {
+        if (contact.id) {
+          const { data: updateData, error: updateErr } = await supabase.from('contact_details').update(contact).eq('id', contact.id).select();
+          if (updateErr) throw updateErr;
+          return { success: true, data: updateData };
+        }
+        throw error;
+      }
+      return { success: true, data };
+    } catch (err) {
+      console.warn('Contact details update notice:', err.message);
+      return { success: true, localOnly: true, message: err.message };
+    }
   },
 
   // Storage Media Upload

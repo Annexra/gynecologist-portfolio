@@ -21,10 +21,17 @@ header.scrolled {
   backdrop-filter: blur(10px);
 }
 
-/* Custom Cursor */
+/* Custom Cursor for Public Site */
 @media (pointer: fine) and (min-width: 768px) {
-  body { cursor: none; }
-  a, button, [role="button"], input, select, textarea { cursor: none; }
+  body.public-site,
+  body.public-site a,
+  body.public-site button,
+  body.public-site [role="button"],
+  body.public-site input,
+  body.public-site select,
+  body.public-site textarea {
+    cursor: none;
+  }
   #cursor-dot {
     position: fixed; top: 0; left: 0; width: 8px; height: 8px;
     background-color: #b50a53; border-radius: 50%;

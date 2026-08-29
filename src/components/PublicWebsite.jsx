@@ -39,11 +39,23 @@ export default function PublicWebsite() {
       }
     }
     loadAllContent();
+
+    const handleSync = () => loadAllContent();
+    window.addEventListener('cms_contact_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+
+    return () => {
+      window.removeEventListener('cms_contact_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
   }, []);
 
   // UI Interactive Effects & Scroll Observers
   useEffect(() => {
     if (loading) return;
+
+    // Enable custom cursor scoping on public website
+    document.body.classList.add('public-site');
 
     // Header Scroll Effect
     const header = document.getElementById('global-header');
@@ -61,9 +73,10 @@ export default function PublicWebsite() {
     // Custom Cursor
     const cursorDot = document.getElementById('cursor-dot');
     const cursorFollower = document.getElementById('cursor-follower');
+    let handleMouseMove;
 
     if (window.matchMedia('(pointer: fine) and (min-width: 768px)').matches && cursorDot && cursorFollower) {
-      const handleMouseMove = (e) => {
+      handleMouseMove = (e) => {
         cursorDot.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
         cursorFollower.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
       };
@@ -101,6 +114,8 @@ export default function PublicWebsite() {
     });
 
     return () => {
+      document.body.classList.remove('public-site', 'cursor-hover');
+      if (handleMouseMove) document.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('scroll', handleProgress);
     };
@@ -118,7 +133,7 @@ export default function PublicWebsite() {
   }
 
   return (
-    <div className="bg-surface font-body-md text-on-surface antialiased">
+    <div id="top" className="bg-surface font-body-md text-on-surface antialiased">
       {/* Scroll Progress & Custom Cursor */}
       <div id="scroll-progress" className="fixed top-0 left-0 h-[3px] bg-gradient-to-r from-primary to-secondary-container z-[10000] w-0 transition-all duration-100" />
       <div className="hidden md:block fixed top-0 left-0 w-2 h-2 bg-primary rounded-full pointer-events-none z-[9999] -translate-x-1/2 -translate-y-1/2" id="cursor-dot" />
@@ -134,7 +149,7 @@ export default function PublicWebsite() {
             <span className="font-headline-sm text-on-surface tracking-tight">{profile?.name || 'Dr. Raveena Thalluru'}</span>
           </div>
           <nav className="hidden lg:flex items-center gap-8">
-            <a className="transition-colors text-primary font-semibold interactive-element" href="#">Home</a>
+            <a className="transition-colors text-primary font-semibold interactive-element" href="#top">Home</a>
             <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element" href="#about">About</a>
             <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element" href="#care-areas">Care Areas</a>
             <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element" href="#education">Education</a>
@@ -190,7 +205,7 @@ export default function PublicWebsite() {
             <div className="w-full max-w-container-max mx-auto grid grid-cols-1 lg:grid-cols-12 gap-stack-lg items-center">
               <div className="lg:col-span-5 lg:col-start-2 relative">
                 <div className="aspect-square rounded-3xl overflow-hidden shadow-md reveal-mask">
-                  <img className="w-full h-full object-cover" alt={profile?.name || 'Dr. Raveena Thalluru'} src={about?.photo_url || profile?.photo_url || 'assets/dr_raveena.jpg'} />
+                  <img className="w-full h-full object-cover" alt={profile?.name || 'Dr. Raveena Thalluru'} src={profile?.photo_url || about?.photo_url || 'assets/dr_raveena.jpeg'} />
                 </div>
                 <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-lg font-headline-md italic rotate-12 timeline-node">
                   RT
@@ -328,9 +343,72 @@ export default function PublicWebsite() {
                   </div>
                 </div>
               </div>
-              <div className="lg:col-span-7 z-10 h-96 w-full rounded-3xl overflow-hidden shadow-lg relative reveal-mask">
-                <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url('${contact?.map_image_url}')` }}></div>
-                <div className="absolute inset-0 bg-primary/5 pointer-events-none"></div>
+              <div className="lg:col-span-7 z-10 h-96 w-full rounded-3xl overflow-hidden shadow-lg relative reveal-mask border border-outline-variant/30 group">
+                {(() => {
+                  let mapUrl = contact?.map_link || '';
+                  if (mapUrl.includes('<iframe')) {
+                    const match = mapUrl.match(/src=["']([^"']+)["']/);
+                    if (match && match[1]) mapUrl = match[1];
+                  }
+                  
+                  const isEmbed = mapUrl.includes('embed') || mapUrl.includes('maps/embed') || mapUrl.includes('output=embed');
+
+                  // Extract location query for external link if available, fallback to full search query
+                  let externalUrl = mapUrl;
+                  if (isEmbed) {
+                    const qParam = new URLSearchParams(mapUrl.split('?')[1] || '').get('q');
+                    if (qParam) {
+                      externalUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(qParam)}`;
+                    } else {
+                      externalUrl = mapUrl.replace(/(\/embed|output=embed)/g, '');
+                    }
+                  }
+                  if (!externalUrl) {
+                    externalUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${contact?.locations?.[0] || 'LIVF Fertility'}, ${contact?.city || 'Chennai'}`)}`;
+                  }
+
+                  return isEmbed ? (
+                    <div className="w-full h-full relative">
+                      <iframe
+                        title="Clinic Google Map Location"
+                        src={mapUrl}
+                        className="w-full h-full border-0"
+                        allowFullScreen=""
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                      />
+                      <a
+                        href={externalUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="absolute inset-0 bg-primary/10 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center cursor-pointer interactive-element"
+                      >
+                        <div className="px-5 py-2.5 bg-primary text-on-primary font-label-md rounded-2xl shadow-2xl flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                          <span className="material-symbols-outlined text-lg">open_in_new</span>
+                          <span className="font-semibold tracking-wide text-xs">View Location</span>
+                        </div>
+                      </a>
+                    </div>
+                  ) : (
+                    <a
+                      href={externalUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block w-full h-full relative overflow-hidden interactive-element cursor-pointer"
+                    >
+                      <div
+                        className="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                        style={{ backgroundImage: `url('${contact?.map_image_url || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDJ7sUBYZZGU8sNk6XdICTUPoKDWeT6Erbb7M12MD1qT7oTTkX0qfS1paLQy9s_uPaWxsqGY7KNVOA61gT8XsUjUwnRItiGVPLOarn6NldL6pFoNzY87EUPdGvChpks6IZDimOCP_EYB5vyWQoJyHr_YFIlOsCKjNTxMRlK-7pOmt4iioKDhVVmrMLPR3loQvFntt5Af_5vUGakOUK2t_wCa-xxZyT7KTZHLirr0z-p16Lo322bGraF'}')` }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-40 group-hover:opacity-80 transition-opacity duration-300 flex items-center justify-center">
+                        <div className="px-5 py-2.5 bg-primary text-on-primary font-label-md rounded-2xl shadow-2xl flex items-center gap-2 transform translate-y-3 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                          <span className="material-symbols-outlined text-lg">near_me</span>
+                          <span className="font-semibold text-xs tracking-wide font-label-md">View Location</span>
+                        </div>
+                      </div>
+                    </a>
+                  );
+                })()}
               </div>
             </div>
             <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-primary-container opacity-20 blur-[100px] rounded-full pointer-events-none"></div>
@@ -338,26 +416,50 @@ export default function PublicWebsite() {
         </div>
       </main>
 
-      <footer className="bg-surface-container-low border-t border-outline-variant py-section-gap reveal-text">
-        <div className="max-w-container-max mx-auto px-margin grid grid-cols-1 md:grid-cols-3 gap-stack-lg">
-          <div className="space-y-stack-sm">
-            <h3 className="font-headline-sm text-primary">{profile?.name || 'Dr. Thalluru'}</h3>
-            <p className="font-body-md text-on-surface-variant">Providing compassionate, specialist fertility and gynaecological care for every stage of womanhood.</p>
+      <footer className="bg-surface-container-low border-t border-outline-variant/40 py-10 reveal-text text-sm">
+        <div className="max-w-container-max mx-auto px-margin grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Doctor Info */}
+          <div className="space-y-2">
+            <h3 className="font-headline-sm text-primary text-base font-bold">{profile?.name || 'Dr. Raveena Thalluru'}</h3>
+            <p className="font-body-sm text-xs text-on-surface-variant leading-relaxed">
+              {profile?.title || 'Consultant Gynecologist & Obstetrician'}. Providing compassionate, specialist fertility and women's health care.
+            </p>
           </div>
-          <div className="flex flex-col gap-4">
-            <h4 className="font-label-md text-on-surface uppercase">Quick Links</h4>
-            <nav className="flex flex-col gap-2">
-              <a className="text-body-md text-on-surface-variant hover:text-primary interactive-element" href="#">Privacy Policy</a>
-              <a className="text-body-md text-on-surface-variant hover:text-primary interactive-element" href="#">Patient Resources</a>
-              <a className="text-body-md text-on-surface-variant hover:text-primary interactive-element" href="#">Affiliated Hospitals</a>
-            </nav>
+
+          {/* Contact Details */}
+          <div className="space-y-2">
+            <h4 className="font-label-md text-xs text-on-surface uppercase font-bold tracking-wider">Contact Details</h4>
+            <div className="space-y-1 text-xs text-on-surface-variant">
+              {contact?.phone_numbers?.map((num, i) => (
+                <p key={i} className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-xs text-primary">call</span>
+                  <a href={`tel:${num}`} className="hover:text-primary transition-colors">{num}</a>
+                </p>
+              ))}
+              {contact?.email && (
+                <p className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-xs text-primary">mail</span>
+                  <a href={`mailto:${contact.email}`} className="hover:text-primary transition-colors">{contact.email}</a>
+                </p>
+              )}
+            </div>
           </div>
-          <div className="flex flex-col gap-4">
-            <h4 className="font-label-md text-on-surface uppercase">Contact</h4>
-            <p className="text-body-md text-on-surface-variant italic">{contact?.address_display}<br/>{contact?.email}</p>
+
+          {/* Current Practice Location */}
+          <div className="space-y-2">
+            <h4 className="font-label-md text-xs text-on-surface uppercase font-bold tracking-wider">Current Practice</h4>
+            <div className="space-y-1 text-xs text-on-surface-variant">
+              <p className="font-semibold text-on-surface">{practice?.clinic_name || 'LIVF Fertility'}</p>
+              <p className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-xs text-primary">location_on</span>
+                <span>{contact?.address_display || 'Level 4, Specialist Medical Centre'}, {contact?.city || 'Chennai'}</span>
+              </p>
+            </div>
           </div>
         </div>
-        <div className="mt-stack-lg text-center font-label-md text-on-surface-variant opacity-60">© 2026 {profile?.name || 'Dr. Raveena Thalluru'}. Excellence in Maternal Health.</div>
+        <div className="mt-8 pt-6 border-t border-outline-variant/30 text-center font-label-md text-xs text-on-surface-variant opacity-70">
+          © {new Date().getFullYear()} {profile?.name || 'Dr. Raveena Thalluru'}. All rights reserved.
+        </div>
       </footer>
     </div>
   );

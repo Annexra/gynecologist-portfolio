@@ -68,7 +68,24 @@ export default function UterusCanvas() {
       'assets/models/uterus.glb',
       (gltf) => {
         uterusModel = gltf.scene;
-        
+        // Apply rich vibrant medical pink/rose material styling to meshes
+        uterusModel.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            if (child.material) {
+              // Enhance material color, roughness, metalness, and emissive glow
+              child.material.color = new THREE.Color(0xf472b6); // Vibrant rose pink
+              if ('roughness' in child.material) child.material.roughness = 0.35;
+              if ('metalness' in child.material) child.material.metalness = 0.15;
+              if ('emissive' in child.material) {
+                child.material.emissive = new THREE.Color(0x9d174d); // Warm deep pink glow
+                child.material.emissiveIntensity = 0.25;
+              }
+            }
+          }
+        });
+
         // Auto center and scale model bounding box
         const box = new THREE.Box3().setFromObject(uterusModel);
         const center = box.getCenter(new THREE.Vector3());

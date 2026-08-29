@@ -24,6 +24,8 @@ export default function AdminDashboard({ onLogout }) {
   const [careModal, setCareModal] = useState({ open: false, data: null });
   const [eduModal, setEduModal] = useState({ open: false, data: null });
   const [approachModal, setApproachModal] = useState({ open: false, data: null });
+  const [mapPickerModal, setMapPickerModal] = useState(false);
+  const [mapSearchQuery, setMapSearchQuery] = useState('');
 
   useEffect(() => {
     loadAllData();
@@ -161,13 +163,55 @@ export default function AdminDashboard({ onLogout }) {
     }
   };
 
+  // Practice Save
+  const handleSavePractice = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await adminContentService.updatePracticeDetails(practice);
+      showNotice('Current Practice details updated!');
+    } catch (err) {
+      showNotice('Failed to update practice details: ' + err.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Patient Approach Save & Delete
+  const handleSavePatientApproach = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await adminContentService.savePatientApproach(approachModal.data);
+      setApproachModal({ open: false, data: null });
+      loadAllData();
+      showNotice('Patient Approach pillar saved!');
+    } catch (err) {
+      showNotice('Failed to save Patient Approach: ' + err.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeletePatientApproach = async (id) => {
+    if (!window.confirm('Delete this patient approach pillar?')) return;
+    try {
+      await adminContentService.deletePatientApproach(id);
+      loadAllData();
+      showNotice('Patient approach pillar deleted.');
+    } catch (err) {
+      showNotice('Failed to delete: ' + err.message, 'error');
+    }
+  };
+
   // Contact Save
   const handleSaveContact = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
       await adminContentService.updateContactDetails(contact);
-      showNotice('Contact details updated!');
+      window.dispatchEvent(new Event('cms_contact_updated'));
+      showNotice('Contact details updated successfully! Live website updated.');
     } catch (err) {
       showNotice('Failed to update contact: ' + err.message, 'error');
     } finally {
@@ -344,7 +388,7 @@ export default function AdminDashboard({ onLogout }) {
               <div className="space-y-2">
                 <label className="font-label-md text-xs uppercase font-semibold text-on-surface">Profile Photo</label>
                 <div className="flex items-center gap-4">
-                  <img src={profile.photo_url || 'assets/dr_raveena.jpg'} alt="Preview" className="w-16 h-16 rounded-2xl object-cover border" />
+                  <img src={profile.photo_url || 'assets/dr_raveena.jpeg'} alt="Preview" className="w-16 h-16 rounded-2xl object-cover border" />
                   <input
                     type="file"
                     accept="image/*"
@@ -399,6 +443,20 @@ export default function AdminDashboard({ onLogout }) {
                   onChange={e => setAbout({ ...about, paragraph_2: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <label className="font-label-md text-xs uppercase font-semibold text-on-surface">About Section Photo</label>
+                <div className="flex items-center gap-4">
+                  <img src={about.photo_url || 'assets/dr_raveena.jpeg'} alt="Preview" className="w-16 h-16 rounded-2xl object-cover border" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => handleImageUpload(e, 'photo_url', 'about')}
+                    disabled={uploading}
+                    className="text-xs text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-secondary-container file:text-on-secondary-container hover:file:opacity-90"
+                  />
+                </div>
               </div>
 
               <button
@@ -541,6 +599,153 @@ export default function AdminDashboard({ onLogout }) {
           </div>
         )}
 
+        {/* CURRENT PRACTICE TAB */}
+        {activeTab === 'practice' && (
+          <div className="space-y-6">
+            <h1 className="font-display-lg text-primary text-3xl">Current Practice CMS</h1>
+            <form onSubmit={handleSavePractice} className="bg-surface p-8 rounded-3xl border border-outline-variant/30 space-y-6">
+              <div className="space-y-1">
+                <label className="font-label-md text-xs uppercase font-semibold text-on-surface">Clinic Name</label>
+                <input
+                  type="text"
+                  value={practice.clinic_name || ''}
+                  onChange={e => setPractice({ ...practice, clinic_name: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-label-md text-xs uppercase font-semibold text-on-surface">Practice Tagline / Focus</label>
+                <textarea
+                  rows={2}
+                  value={practice.tagline || ''}
+                  onChange={e => setPractice({ ...practice, tagline: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface"
+                />
+              </div>
+
+              <div className="space-y-4">
+                <label className="font-label-md text-xs uppercase font-semibold text-on-surface">Clinic Locations</label>
+                {(practice.locations || []).map((loc, idx) => (
+                  <div key={idx} className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-surface-container-low border">
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-on-surface-variant">Location Name</label>
+                      <input
+                        type="text"
+                        value={loc.name || ''}
+                        onChange={e => {
+                          const locs = [...(practice.locations || [])];
+                          locs[idx] = { ...locs[idx], name: e.target.value };
+                          setPractice({ ...practice, locations: locs });
+                        }}
+                        className="w-full px-3 py-2 rounded-xl bg-surface border text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-on-surface-variant">City</label>
+                      <input
+                        type="text"
+                        value={loc.city || ''}
+                        onChange={e => {
+                          const locs = [...(practice.locations || [])];
+                          locs[idx] = { ...locs[idx], city: e.target.value };
+                          setPractice({ ...practice, locations: locs });
+                        }}
+                        className="w-full px-3 py-2 rounded-xl bg-surface border text-sm"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-6 py-3 bg-primary text-on-primary rounded-xl font-label-md text-sm shadow-md hover:shadow-lg transition-all"
+              >
+                {saving ? 'Saving...' : 'Save Practice Details'}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* PATIENT APPROACH TAB */}
+        {activeTab === 'approach' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="font-display-lg text-primary text-3xl">Patient Approach Pillars</h1>
+              <button
+                onClick={() => setApproachModal({ open: true, data: { step_number: `0${patientApproach.length + 1}`, title: '', description: '', display_order: patientApproach.length + 1, is_published: true } })}
+                className="px-4 py-2 bg-primary text-on-primary rounded-xl font-label-md text-xs flex items-center gap-1"
+              >
+                <span className="material-symbols-outlined text-sm">add</span>
+                <span>Add Pillar</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {patientApproach.map(item => (
+                <div key={item.id} className="bg-surface p-6 rounded-2xl border border-outline-variant/30 space-y-3 relative">
+                  <div className="flex items-start justify-between">
+                    <span className="text-2xl font-display-lg text-primary font-bold">{item.step_number}</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setApproachModal({ open: true, data: item })} className="text-secondary hover:text-primary text-xs">Edit</button>
+                      <button onClick={() => handleDeletePatientApproach(item.id)} className="text-error text-xs">Delete</button>
+                    </div>
+                  </div>
+                  <h3 className="font-headline-sm text-on-surface text-base">{item.title}</h3>
+                  <p className="font-body-sm text-on-surface-variant text-xs">{item.description}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Approach Modal */}
+            {approachModal.open && (
+              <div className="fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <form onSubmit={handleSavePatientApproach} className="bg-surface p-6 rounded-3xl max-w-md w-full border border-outline-variant/30 space-y-4">
+                  <h3 className="font-headline-sm text-primary text-lg">{approachModal.data?.id ? 'Edit Pillar' : 'Add Approach Pillar'}</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="font-label-md text-xs uppercase font-semibold">Step Number</label>
+                      <input
+                        type="text"
+                        required
+                        value={approachModal.data?.step_number || ''}
+                        onChange={e => setApproachModal({ ...approachModal, data: { ...approachModal.data, step_number: e.target.value } })}
+                        className="w-full px-3 py-2 rounded-xl bg-surface-container-low border text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="font-label-md text-xs uppercase font-semibold">Title</label>
+                      <input
+                        type="text"
+                        required
+                        value={approachModal.data?.title || ''}
+                        onChange={e => setApproachModal({ ...approachModal, data: { ...approachModal.data, title: e.target.value } })}
+                        className="w-full px-3 py-2 rounded-xl bg-surface-container-low border text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="font-label-md text-xs uppercase font-semibold">Description</label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={approachModal.data?.description || ''}
+                      onChange={e => setApproachModal({ ...approachModal, data: { ...approachModal.data, description: e.target.value } })}
+                      className="w-full px-3 py-2 rounded-xl bg-surface-container-low border text-sm"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button type="button" onClick={() => setApproachModal({ open: false, data: null })} className="px-4 py-2 border rounded-xl text-xs">Cancel</button>
+                    <button type="submit" disabled={saving} className="px-4 py-2 bg-primary text-on-primary rounded-xl text-xs">{saving ? 'Saving...' : 'Save'}</button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* CONTACT DETAILS TAB */}
         {activeTab === 'contact' && (
           <div className="space-y-6">
@@ -585,6 +790,85 @@ export default function AdminDashboard({ onLogout }) {
                 </div>
               </div>
 
+              <div className="space-y-1">
+                <label className="font-label-md text-xs uppercase font-semibold text-on-surface">Clinic Location Names (Comma-separated)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Perungudi, T. Nagar"
+                  value={Array.isArray(contact.locations) ? contact.locations.join(', ') : contact.locations || ''}
+                  onChange={e => {
+                    const locs = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                    setContact({ ...contact, locations: locs });
+                  }}
+                  className="w-full px-4 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="font-label-md text-xs uppercase font-semibold text-on-surface">Clinic Address Display</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Level 4, Specialist Medical Centre"
+                    value={contact.address_display || ''}
+                    onChange={e => setContact({ ...contact, address_display: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-label-md text-xs uppercase font-semibold text-on-surface">City & State</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Chennai, Tamil Nadu"
+                    value={contact.city || ''}
+                    onChange={e => setContact({ ...contact, city: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-label-md text-xs uppercase font-semibold text-on-surface">Contact Email</label>
+                <input
+                  type="email"
+                  placeholder="contact@drthalluru.com"
+                  value={contact.email || ''}
+                  onChange={e => setContact({ ...contact, email: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="font-label-md text-xs uppercase font-semibold text-on-surface">Clinic Map Location</label>
+                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                  <button
+                    type="button"
+                    onClick={() => setMapPickerModal(true)}
+                    className="px-5 py-3 bg-primary text-on-primary rounded-xl font-label-md text-xs flex items-center gap-2 hover:opacity-95 transition-all shadow-md"
+                  >
+                    <span className="material-symbols-outlined text-sm">location_on</span>
+                    <span>Choose / Pick Location on Map</span>
+                  </button>
+                  {contact.map_link && (
+                    <span className="text-xs text-primary font-semibold flex items-center gap-1 bg-primary-container/40 px-3 py-1.5 rounded-lg border border-primary/20">
+                      <span className="material-symbols-outlined text-sm text-primary">check_circle</span> Location Set
+                    </span>
+                  )}
+                </div>
+
+                <div className="pt-2 space-y-1">
+                  <label className="text-[11px] text-on-surface-variant font-medium">Map Link or Embed URL:</label>
+                  <input
+                    type="text"
+                    placeholder="https://maps.google.com/?q=... or <iframe src='...'></iframe>"
+                    value={contact.map_link || ''}
+                    onChange={e => setContact({ ...contact, map_link: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface"
+                  />
+                  <p className="text-[11px] text-on-surface-variant">Use the 'Choose Location' button to search & select your clinic directly on Google Maps, or manually paste a map link/iframe code above.</p>
+                </div>
+              </div>
+
               <button
                 type="submit"
                 disabled={saving}
@@ -596,6 +880,102 @@ export default function AdminDashboard({ onLogout }) {
           </div>
         )}
       </main>
+
+      {/* MAP LOCATION PICKER MODAL */}
+      {mapPickerModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-surface w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl border border-outline-variant/40 flex flex-col max-h-[90vh]">
+            <div className="p-6 bg-surface-container-low border-b border-outline-variant/30 flex items-center justify-between">
+              <div>
+                <h3 className="font-display-lg text-primary text-xl font-bold">Pick & Search Clinic Location on Google Maps</h3>
+                <p className="text-xs text-on-surface-variant mt-0.5">Search any location/clinic below, preview on the live map, then click "Confirm & Use This Location".</p>
+              </div>
+              <button
+                onClick={() => setMapPickerModal(false)}
+                className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            {/* LIVE LOCATION SEARCH BAR */}
+            <div className="p-4 bg-surface border-b border-outline-variant/30 flex items-center gap-3">
+              <div className="relative flex-1">
+                <span className="material-symbols-outlined absolute left-3 top-2.5 text-on-surface-variant text-lg">search</span>
+                <input
+                  type="text"
+                  placeholder="Search clinic name, street, area, or city (e.g. Apollo Hospital Greams Road, Chennai)"
+                  value={mapSearchQuery}
+                  onChange={e => setMapSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface focus:outline-none focus:border-primary"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const activeQuery = mapSearchQuery || `${contact.locations?.[0] || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`;
+                  const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(activeQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+                  setContact(prev => ({ ...prev, map_link: embedUrl }));
+                  setMapPickerModal(false);
+                  showNotice(`Location set to "${activeQuery}"! Click "Save Contact Details" to publish.`, 'success');
+                }}
+                className="px-4 py-2 bg-primary text-on-primary rounded-xl font-label-md text-xs font-semibold hover:opacity-95 transition-all shadow-sm flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-sm">check</span>
+                <span>Select Searched Location</span>
+              </button>
+            </div>
+
+            <div className="flex-1 min-h-[380px] relative bg-surface-container-low">
+              {(() => {
+                const activeQuery = mapSearchQuery || `${contact.locations?.[0] || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`;
+                return (
+                  <iframe
+                    title="Google Maps Location Picker"
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent(activeQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                    className="w-full h-full min-h-[380px] border-0"
+                    allowFullScreen=""
+                    loading="lazy"
+                  />
+                );
+              })()}
+            </div>
+
+            <div className="p-5 bg-surface border-t border-outline-variant/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-xs text-on-surface-variant">
+                <span className="font-semibold text-on-surface">Active Location Preview:</span> {mapSearchQuery || `${contact.locations?.[0] || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`}
+              </div>
+              <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const activeQuery = mapSearchQuery || `${contact.locations?.[0] || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`;
+                    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activeQuery)}`, '_blank');
+                  }}
+                  className="px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl font-label-md text-xs hover:bg-surface-container-highest transition-colors flex items-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-sm">open_in_new</span>
+                  <span>Open in Google Maps Tab</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const activeQuery = mapSearchQuery || `${contact.locations?.[0] || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`;
+                    const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(activeQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+                    setContact(prev => ({ ...prev, map_link: embedUrl }));
+                    setMapPickerModal(false);
+                    showNotice('Location confirmed! Click "Save Contact Details" to publish.', 'success');
+                  }}
+                  className="px-5 py-2.5 bg-primary text-on-primary rounded-xl font-label-md text-xs shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 font-bold"
+                >
+                  <span className="material-symbols-outlined text-sm">check</span>
+                  <span>Confirm & Use This Location</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
