@@ -376,7 +376,7 @@ export default function WomensHealthLab() {
           </div>
 
           {/* EDITORIAL EXPERIENCE SELECTOR */}
-          <div className="flex flex-wrap md:flex-nowrap items-center gap-2 bg-surface p-1.5 rounded-2xl border border-outline-variant/30 shadow-xs">
+          <div className="flex flex-col sm:flex-row md:flex-nowrap items-stretch sm:items-center gap-2 bg-surface p-2 rounded-2xl border border-outline-variant/30 shadow-xs w-full md:w-auto">
             {EXPERIENCES_DATA.map((exp) => {
               const isActive = exp.id === activeExpId;
               return (
@@ -387,7 +387,7 @@ export default function WomensHealthLab() {
                       setActiveExpId(exp.id);
                     }
                   }}
-                  className={`px-4 py-3 rounded-xl flex items-center gap-3 transition-all duration-300 relative text-left ${
+                  className={`w-full sm:w-auto sm:flex-1 px-4 py-3 rounded-xl flex items-center gap-3 transition-all duration-300 relative text-left ${
                     isActive
                       ? 'bg-primary text-on-primary shadow-md font-semibold'
                       : exp.isAvailable
@@ -395,10 +395,10 @@ export default function WomensHealthLab() {
                       : 'text-on-surface-variant/40 cursor-not-allowed opacity-60'
                   }`}
                 >
-                  <span className={`font-mono text-xs ${isActive ? 'text-on-primary/80' : 'text-primary/60'}`}>{exp.code}</span>
-                  <div>
+                  <span className={`font-mono text-xs shrink-0 ${isActive ? 'text-on-primary/80' : 'text-primary/60'}`}>{exp.code}</span>
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs uppercase font-label-md tracking-wider leading-tight">{exp.title}</p>
-                    <p className={`text-[10px] font-normal mt-0.5 truncate max-w-[130px] ${isActive ? 'text-on-primary/90' : 'text-on-surface-variant/70'}`}>
+                    <p className={`text-[10px] font-normal mt-0.5 truncate max-w-full ${isActive ? 'text-on-primary/90' : 'text-on-surface-variant/70'}`}>
                       {exp.subtitle}
                     </p>
                   </div>
