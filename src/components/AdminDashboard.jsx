@@ -1,6 +1,242 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { adminContentService, publicContentService } from '../services/contentService';
+import { adminContentService, publicContentService, getDynamicMapQuery, getDynamicMapEmbedUrl, parseLocationQueryToContact } from '../services/contentService';
+
+function InteractiveMapModal({ initialQuery, contact, onConfirm, onClose }) {
+  const mapRef = React.useRef(null);
+  const mapInstanceRef = React.useRef(null);
+  const markerRef = React.useRef(null);
+
+  const [searchQuery, setSearchQuery] = React.useState(initialQuery || '');
+  const [selectedCoords, setSelectedCoords] = React.useState({ lat: 13.0827, lng: 80.2707 });
+  const [selectedAddress, setSelectedAddress] = React.useState(initialQuery || '');
+  const [loading, setLoading] = React.useState(false);
+  const [searching, setSearching] = React.useState(false);
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const initMap = async () => {
+      if (!window.L) {
+        if (!document.getElementById('leaflet-css')) {
+          const link = document.createElement('link');
+          link.id = 'leaflet-css';
+          link.rel = 'stylesheet';
+          link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+          document.head.appendChild(link);
+        }
+
+        if (!window.leafletLoadingPromise) {
+          window.leafletLoadingPromise = new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+            script.onload = resolve;
+            document.head.appendChild(script);
+          });
+        }
+        await window.leafletLoadingPromise;
+      }
+
+      if (!isMounted || !mapRef.current) return;
+
+      if (!mapInstanceRef.current && window.L) {
+        const L = window.L;
+        const initialLat = selectedCoords.lat;
+        const initialLng = selectedCoords.lng;
+
+        const map = L.map(mapRef.current).setView([initialLat, initialLng], 13);
+        mapInstanceRef.current = map;
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        const customIcon = L.divIcon({
+          className: 'custom-map-pin',
+          html: `<div style="background-color: #7d4d7a; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2.5px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;"><div style="width: 10px; height: 10px; background-color: white; border-radius: 50%;"></div></div>`,
+          iconSize: [30, 30],
+          iconAnchor: [15, 30]
+        });
+
+        const marker = L.marker([initialLat, initialLng], {
+          draggable: true,
+          icon: customIcon
+        }).addTo(map);
+        markerRef.current = marker;
+
+        marker.on('dragend', async (e) => {
+          const { lat, lng } = e.target.getLatLng();
+          setSelectedCoords({ lat, lng });
+          await reverseGeocode(lat, lng);
+        });
+
+        map.on('click', async (e) => {
+          const { lat, lng } = e.latlng;
+          marker.setLatLng([lat, lng]);
+          setSelectedCoords({ lat, lng });
+          await reverseGeocode(lat, lng);
+        });
+
+        if (initialQuery) {
+          geocodeSearch(initialQuery, map, marker);
+        }
+      }
+    };
+
+    initMap();
+
+    return () => {
+      isMounted = false;
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []);
+
+  const reverseGeocode = async (lat, lng) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+      const data = await res.json();
+      if (data && data.display_name) {
+        const addressText = data.display_name;
+        setSelectedAddress(addressText);
+        setSearchQuery(addressText);
+      }
+    } catch (err) {
+      console.error('Reverse geocode error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const geocodeSearch = async (queryText, targetMap, targetMarker) => {
+    if (!queryText || !queryText.trim()) return;
+    setSearching(true);
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryText)}&limit=1`);
+      const data = await res.json();
+      if (data && data.length > 0) {
+        const lat = parseFloat(data[0].lat);
+        const lng = parseFloat(data[0].lon);
+        const addressText = data[0].display_name || queryText;
+
+        const map = targetMap || mapInstanceRef.current;
+        const marker = targetMarker || markerRef.current;
+
+        setSelectedCoords({ lat, lng });
+        setSelectedAddress(addressText);
+        setSearchQuery(addressText);
+
+        if (map && marker) {
+          map.setView([lat, lng], 15);
+          marker.setLatLng([lat, lng]);
+        }
+      }
+    } catch (err) {
+      console.error('Geocode search error:', err);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleConfirm = () => {
+    const finalLocation = selectedAddress || searchQuery || initialQuery;
+    onConfirm(finalLocation);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-surface w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl border border-outline-variant/40 flex flex-col max-h-[90vh]">
+        <div className="p-5 bg-surface-container-low border-b border-outline-variant/30 flex items-center justify-between">
+          <div>
+            <h3 className="font-display-lg text-primary text-xl font-bold flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary">location_on</span>
+              <span>Interactive Map Location Picker</span>
+            </h3>
+            <p className="text-xs text-on-surface-variant mt-0.5">Click anywhere on the map or drag the pin marker to select clinic location.</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors"
+          >
+            <span className="material-symbols-outlined text-lg">close</span>
+          </button>
+        </div>
+
+        <div className="p-4 bg-surface border-b border-outline-variant/30 flex items-center gap-3">
+          <div className="relative flex-1">
+            <span className="material-symbols-outlined absolute left-3 top-2.5 text-on-surface-variant text-lg">search</span>
+            <input
+              type="text"
+              placeholder="Search clinic name, hospital, street, or area (e.g. Apollo Hospital Greams Road, Chennai)"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  geocodeSearch(searchQuery);
+                }
+              }}
+              className="w-full pl-10 pr-4 py-2 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface focus:outline-none focus:border-primary"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => geocodeSearch(searchQuery)}
+            disabled={searching}
+            className="px-4 py-2 bg-primary text-on-primary rounded-xl font-label-md text-xs font-semibold hover:opacity-95 transition-all shadow-sm flex items-center gap-1.5"
+          >
+            <span className="material-symbols-outlined text-sm">{searching ? 'sync' : 'search'}</span>
+            <span>{searching ? 'Searching...' : 'Search Location'}</span>
+          </button>
+        </div>
+
+        <div className="flex-1 min-h-[400px] relative bg-surface-container-low">
+          <div ref={mapRef} className="w-full h-full min-h-[400px] z-10" />
+          {loading && (
+            <div className="absolute top-4 right-4 z-20 bg-surface/90 px-3 py-1.5 rounded-xl shadow-md border border-outline-variant text-xs text-primary font-semibold flex items-center gap-2">
+              <span className="material-symbols-outlined animate-spin text-sm">sync</span>
+              <span>Fetching address...</span>
+            </div>
+          )}
+        </div>
+
+        <div className="p-5 bg-surface border-t border-outline-variant/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-xs text-on-surface-variant max-w-lg">
+            <span className="font-semibold text-on-surface block">Active Location Selected:</span>
+            <span className="text-primary font-medium text-xs line-clamp-2">{selectedAddress || searchQuery || 'Click map to select location'}</span>
+          </div>
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                const active = selectedAddress || searchQuery;
+                if (active) {
+                  window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(active)}`, '_blank');
+                }
+              }}
+              className="px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl font-label-md text-xs hover:bg-surface-container-highest transition-colors flex items-center gap-1.5"
+            >
+              <span className="material-symbols-outlined text-sm">open_in_new</span>
+              <span>Open Google Maps</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirm}
+              className="px-5 py-2.5 bg-primary text-on-primary rounded-xl font-label-md text-xs shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 font-bold"
+            >
+              <span className="material-symbols-outlined text-sm">check</span>
+              <span>Confirm & Use This Location</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminDashboard({ onLogout }) {
   const { logout, user } = useAuth();
@@ -798,7 +1034,8 @@ export default function AdminDashboard({ onLogout }) {
                   value={Array.isArray(contact.locations) ? contact.locations.join(', ') : contact.locations || ''}
                   onChange={e => {
                     const locs = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-                    setContact({ ...contact, locations: locs });
+                    const updated = { ...contact, locations: locs };
+                    setContact({ ...updated, map_link: getDynamicMapEmbedUrl(updated) });
                   }}
                   className="w-full px-4 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface"
                 />
@@ -811,7 +1048,10 @@ export default function AdminDashboard({ onLogout }) {
                     type="text"
                     placeholder="e.g. Level 4, Specialist Medical Centre"
                     value={contact.address_display || ''}
-                    onChange={e => setContact({ ...contact, address_display: e.target.value })}
+                    onChange={e => {
+                      const updated = { ...contact, address_display: e.target.value };
+                      setContact({ ...updated, map_link: getDynamicMapEmbedUrl(updated) });
+                    }}
                     className="w-full px-4 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface"
                   />
                 </div>
@@ -821,7 +1061,10 @@ export default function AdminDashboard({ onLogout }) {
                     type="text"
                     placeholder="e.g. Chennai, Tamil Nadu"
                     value={contact.city || ''}
-                    onChange={e => setContact({ ...contact, city: e.target.value })}
+                    onChange={e => {
+                      const updated = { ...contact, city: e.target.value };
+                      setContact({ ...updated, map_link: getDynamicMapEmbedUrl(updated) });
+                    }}
                     className="w-full px-4 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface"
                   />
                 </div>
@@ -847,12 +1090,8 @@ export default function AdminDashboard({ onLogout }) {
                       let initialQuery = '';
                       if (contact.map_link && !contact.map_link.includes('<iframe') && !contact.map_link.includes('http')) {
                         initialQuery = contact.map_link;
-                      } else if (contact.address_display) {
-                        initialQuery = `${contact.address_display}${contact.city ? ', ' + contact.city : ''}`;
-                      } else if (contact.locations?.length) {
-                        initialQuery = `${contact.locations.join(' & ')}${contact.city ? ', ' + contact.city : ''}`;
                       } else {
-                        initialQuery = contact.city || 'Chennai';
+                        initialQuery = getDynamicMapQuery(contact);
                       }
                       setMapSearchQuery(initialQuery);
                       setMapPickerModal(true);
@@ -875,7 +1114,14 @@ export default function AdminDashboard({ onLogout }) {
                     type="text"
                     placeholder="https://maps.google.com/?q=... or <iframe src='...'></iframe> or clinic search query"
                     value={contact.map_link || ''}
-                    onChange={e => setContact({ ...contact, map_link: e.target.value })}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val.trim()) {
+                        setContact(prev => parseLocationQueryToContact(val, prev));
+                      } else {
+                        setContact(prev => ({ ...prev, map_link: '' }));
+                      }
+                    }}
                     className="w-full px-4 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface"
                   />
                   <p className="text-[11px] text-on-surface-variant">Use the 'Choose Location' button to search & select your clinic directly on Google Maps, or paste any map link / embed code / address text above.</p>
@@ -896,108 +1142,16 @@ export default function AdminDashboard({ onLogout }) {
 
       {/* MAP LOCATION PICKER MODAL */}
       {mapPickerModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-surface w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl border border-outline-variant/40 flex flex-col max-h-[90vh]">
-            <div className="p-6 bg-surface-container-low border-b border-outline-variant/30 flex items-center justify-between">
-              <div>
-                <h3 className="font-display-lg text-primary text-xl font-bold">Pick & Search Clinic Location on Google Maps</h3>
-                <p className="text-xs text-on-surface-variant mt-0.5">Search any location, clinic name, or street below, preview on the live map, then click "Confirm & Use This Location".</p>
-              </div>
-              <button
-                onClick={() => setMapPickerModal(false)}
-                className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors"
-              >
-                <span className="material-symbols-outlined text-lg">close</span>
-              </button>
-            </div>
-
-            {/* LIVE LOCATION SEARCH BAR */}
-            <div className="p-4 bg-surface border-b border-outline-variant/30 flex items-center gap-3">
-              <div className="relative flex-1">
-                <span className="material-symbols-outlined absolute left-3 top-2.5 text-on-surface-variant text-lg">search</span>
-                <input
-                  type="text"
-                  placeholder="Search clinic name, hospital, street, or area (e.g. Apollo Hospital Greams Road, Chennai)"
-                  value={mapSearchQuery}
-                  onChange={e => setMapSearchQuery(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      const activeQuery = mapSearchQuery.trim() || `${contact.address_display || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`;
-                      const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(activeQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-                      setContact(prev => ({ ...prev, map_link: embedUrl }));
-                      setMapPickerModal(false);
-                      showNotice(`Location set to "${activeQuery}"! Click "Save Contact Details" to publish.`, 'success');
-                    }
-                  }}
-                  className="w-full pl-10 pr-4 py-2 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface focus:outline-none focus:border-primary"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const activeQuery = mapSearchQuery.trim() || `${contact.address_display || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`;
-                  const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(activeQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-                  setContact(prev => ({ ...prev, map_link: embedUrl }));
-                  setMapPickerModal(false);
-                  showNotice(`Location set to "${activeQuery}"! Click "Save Contact Details" to publish.`, 'success');
-                }}
-                className="px-4 py-2 bg-primary text-on-primary rounded-xl font-label-md text-xs font-semibold hover:opacity-95 transition-all shadow-sm flex items-center gap-1.5"
-              >
-                <span className="material-symbols-outlined text-sm">check</span>
-                <span>Select Searched Location</span>
-              </button>
-            </div>
-
-            <div className="flex-1 min-h-[380px] relative bg-surface-container-low">
-              {(() => {
-                const activeQuery = mapSearchQuery.trim() || `${contact.address_display || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`;
-                return (
-                  <iframe
-                    title="Google Maps Location Picker"
-                    src={`https://maps.google.com/maps?q=${encodeURIComponent(activeQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
-                    className="w-full h-full min-h-[380px] border-0"
-                    allowFullScreen=""
-                    loading="lazy"
-                  />
-                );
-              })()}
-            </div>
-
-            <div className="p-5 bg-surface border-t border-outline-variant/30 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-xs text-on-surface-variant">
-                <span className="font-semibold text-on-surface">Active Location Preview:</span> {mapSearchQuery.trim() || `${contact.address_display || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`}
-              </div>
-              <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const activeQuery = mapSearchQuery.trim() || `${contact.address_display || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`;
-                    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activeQuery)}`, '_blank');
-                  }}
-                  className="px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl font-label-md text-xs hover:bg-surface-container-highest transition-colors flex items-center gap-1.5"
-                >
-                  <span className="material-symbols-outlined text-sm">open_in_new</span>
-                  <span>Open in Google Maps Tab</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const activeQuery = mapSearchQuery.trim() || `${contact.address_display || 'LIVF Fertility'}, ${contact.city || 'Chennai'}`;
-                    const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(activeQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-                    setContact(prev => ({ ...prev, map_link: embedUrl }));
-                    setMapPickerModal(false);
-                    showNotice(`Location set to "${activeQuery}"! Click "Save Contact Details" to publish.`, 'success');
-                  }}
-                  className="px-5 py-2.5 bg-primary text-on-primary rounded-xl font-label-md text-xs shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 font-bold"
-                >
-                  <span className="material-symbols-outlined text-sm">check</span>
-                  <span>Confirm & Use This Location</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <InteractiveMapModal
+          initialQuery={mapSearchQuery.trim() || getDynamicMapQuery(contact)}
+          contact={contact}
+          onConfirm={(selectedQuery) => {
+            setContact(prev => parseLocationQueryToContact(selectedQuery, prev));
+            setMapPickerModal(false);
+            showNotice(`Location set to "${selectedQuery}" and form fields updated! Click "Save Contact Details" to publish.`, 'success');
+          }}
+          onClose={() => setMapPickerModal(false)}
+        />
       )}
     </div>
   );

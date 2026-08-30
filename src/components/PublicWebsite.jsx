@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { publicContentService } from '../services/contentService';
+import { publicContentService, getDynamicMapQuery, getDynamicMapEmbedUrl } from '../services/contentService';
 import UterusCanvas from './UterusCanvas';
 
 export default function PublicWebsite() {
@@ -351,23 +351,20 @@ export default function PublicWebsite() {
                     if (match && match[1]) rawMapUrl = match[1];
                   }
 
-                  const dynamicQuery = [
-                    contact?.address_display,
-                    contact?.locations?.join(' '),
-                    contact?.city
-                  ].filter(Boolean).join(', ') || 'LIVF Fertility, Chennai';
+                  const dynamicQuery = getDynamicMapQuery(contact);
+                  const dynamicEmbedUrl = getDynamicMapEmbedUrl(contact);
 
                   let embedSrc = '';
                   let externalUrl = '';
 
                   if (rawMapUrl) {
-                    if (rawMapUrl.includes('embed') || rawMapUrl.includes('output=embed')) {
+                    if (rawMapUrl.includes('embed') || rawMapUrl.includes('output=embed') || rawMapUrl.includes('openstreetmap.org')) {
                       embedSrc = rawMapUrl;
                       const qParam = new URLSearchParams(rawMapUrl.split('?')[1] || '').get('q');
                       if (qParam) {
                         externalUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(qParam)}`;
                       } else {
-                        externalUrl = rawMapUrl;
+                        externalUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dynamicQuery)}`;
                       }
                     } else if (rawMapUrl.startsWith('http://') || rawMapUrl.startsWith('https://')) {
                       externalUrl = rawMapUrl;
@@ -377,7 +374,7 @@ export default function PublicWebsite() {
                       externalUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rawMapUrl)}`;
                     }
                   } else {
-                    embedSrc = `https://maps.google.com/maps?q=${encodeURIComponent(dynamicQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+                    embedSrc = dynamicEmbedUrl;
                     externalUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dynamicQuery)}`;
                   }
 

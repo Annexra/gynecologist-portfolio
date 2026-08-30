@@ -59,9 +59,109 @@ const INITIAL_DATA = {
     address_display: 'Level 4, Specialist Medical Centre',
     email: 'contact@drthalluru.com',
     map_image_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDJ7sUBYZZGU8sNk6XdICTUPoKDWeT6Erbb7M12MD1qT7oTTkX0qfS1paLQy9s_uPaWxsqGY7KNVOA61gT8XsUjUwnRItiGVPLOarn6NldL6pFoNzY87EUPdGvChpks6IZDimOCP_EYB5vyWQoJyHr_YFIlOsCKjNTxMRlK-7pOmt4iioKDhVVmrMLPR3loQvFntt5Af_5vUGakOUK2t_wCa-xxZyT7KTZHLirr0z-p16Lo322bGraF',
-    map_link: 'https://maps.google.com/maps?q=LIVF+Fertility+Chennai&t=&z=15&ie=UTF8&iwloc=&output=embed'
+    map_link: 'https://maps.google.com/maps?q=Level%204%2C%20Specialist%20Medical%20Centre%2C%20Perungudi%2C%20T.%20Nagar%2C%20Chennai%2C%20Tamil%20Nadu&t=&z=15&ie=UTF8&iwloc=&output=embed'
   }
 };
+
+export function getDynamicMapQuery(contact) {
+  if (!contact) return 'LIVF Fertility, Chennai';
+  const address = contact.address_display || '';
+  const locs = Array.isArray(contact.locations) 
+    ? contact.locations.join(', ') 
+    : (contact.locations || '');
+  const city = contact.city || '';
+  const parts = [address, locs, city].filter(Boolean);
+  return parts.length > 0 ? parts.join(', ') : 'LIVF Fertility, Chennai';
+}
+
+export function getDynamicMapEmbedUrl(contact) {
+  const query = getDynamicMapQuery(contact);
+  return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+}
+
+export function parseLocationQueryToContact(queryOrUrl, existingContact = {}) {
+  if (!queryOrUrl || typeof queryOrUrl !== 'string') return existingContact;
+
+  let raw = queryOrUrl.trim();
+
+  if (raw.includes('<iframe')) {
+    const match = raw.match(/src=["']([^"']+)["']/);
+    if (match && match[1]) raw = match[1];
+  }
+
+  if (raw.includes('http://') || raw.includes('https://')) {
+    try {
+      const urlObj = new URL(raw);
+      const q = urlObj.searchParams.get('q') || urlObj.searchParams.get('query');
+      if (q) raw = decodeURIComponent(q);
+    } catch (e) {
+      const qMatch = raw.match(/[?&](?:q|query)=([^&]+)/);
+      if (qMatch && qMatch[1]) raw = decodeURIComponent(qMatch[1]);
+    }
+  }
+
+  raw = raw.replace(/^https?:\/\/maps\.google\.com\/maps\?q=/i, '');
+  raw = raw.replace(/&.*$/, '');
+  try {
+    raw = decodeURIComponent(raw).trim();
+  } catch (e) {
+    raw = raw.trim();
+  }
+
+  if (!raw) return existingContact;
+
+  const parts = raw.split(',').map(s => s.trim()).filter(Boolean);
+
+  let address_display = existingContact.address_display || '';
+  let locations = Array.isArray(existingContact.locations) ? [...existingContact.locations] : [];
+  let city = existingContact.city || '';
+
+  if (parts.length === 1) {
+    address_display = parts[0];
+    locations = [parts[0]];
+  } else if (parts.length === 2) {
+    address_display = parts[0];
+    locations = [parts[0]];
+    city = parts[1];
+  } else if (parts.length === 3) {
+    address_display = parts[0];
+    locations = [parts[1]];
+    city = parts[2];
+  } else if (parts.length >= 4) {
+    const isLastStateOrCountry = /tamil nadu|india|karnataka|kerala|maharashtra|telangana|andhra pradesh|state/i.test(parts[parts.length - 1]);
+    if (isLastStateOrCountry) {
+      city = `${parts[parts.length - 2]}, ${parts[parts.length - 1]}`;
+      const middleParts = parts.slice(0, parts.length - 2);
+      if (middleParts.length >= 2) {
+        address_display = middleParts.slice(0, Math.ceil(middleParts.length / 2)).join(', ');
+        locations = middleParts.slice(Math.ceil(middleParts.length / 2));
+      } else {
+        address_display = middleParts[0];
+        locations = [middleParts[0]];
+      }
+    } else {
+      city = parts[parts.length - 1];
+      const middleParts = parts.slice(0, parts.length - 1);
+      if (middleParts.length >= 2) {
+        address_display = middleParts.slice(0, Math.ceil(middleParts.length / 2)).join(', ');
+        locations = middleParts.slice(Math.ceil(middleParts.length / 2));
+      } else {
+        address_display = middleParts[0];
+        locations = [middleParts[0]];
+      }
+    }
+  }
+
+  const dynamicEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(raw)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+
+  return {
+    ...existingContact,
+    address_display,
+    locations,
+    city,
+    map_link: dynamicEmbedUrl
+  };
+}
 
 // Public Data Service
 export const publicContentService = {
@@ -150,20 +250,20 @@ export const publicContentService = {
   },
 
   async getContactDetails() {
+    const saved = localStorage.getItem('dr_raveena_contact_details');
+    const localData = saved ? JSON.parse(saved) : null;
+
     if (!isSupabaseConfigured()) {
-      const saved = localStorage.getItem('dr_raveena_contact_details');
-      return saved ? JSON.parse(saved) : INITIAL_DATA.contact_details;
+      return localData || INITIAL_DATA.contact_details;
     }
     try {
       const { data, error } = await supabase.from('contact_details').select('*').single();
       if (error || !data) {
-        const saved = localStorage.getItem('dr_raveena_contact_details');
-        return saved ? JSON.parse(saved) : INITIAL_DATA.contact_details;
+        return localData || INITIAL_DATA.contact_details;
       }
-      return data;
+      return { ...data, ...(localData || {}) };
     } catch {
-      const saved = localStorage.getItem('dr_raveena_contact_details');
-      return saved ? JSON.parse(saved) : INITIAL_DATA.contact_details;
+      return localData || INITIAL_DATA.contact_details;
     }
   }
 };
