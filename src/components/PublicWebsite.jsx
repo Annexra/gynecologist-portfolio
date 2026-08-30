@@ -251,7 +251,11 @@ export default function PublicWebsite() {
                         {String(idx + 1).padStart(2, '0')}
                       </span>
                       <div className="w-12 h-12 rounded-xl bg-primary-container/40 text-primary flex items-center justify-center flex-shrink-0 group-hover:bg-primary group-hover:text-on-primary transition-all duration-300 shadow-sm">
-                        <span className="material-symbols-outlined text-2xl">{area.icon || 'child_care'}</span>
+                        {/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E6}-\u{1F1FF}]/u.test(area.icon || '') ? (
+                          <span className="text-2xl">{area.icon}</span>
+                        ) : (
+                          <span className="material-symbols-outlined text-2xl">{area.icon || 'child_care'}</span>
+                        )}
                       </div>
                       <div className="flex-1">
                         <h3 className="font-headline-sm text-on-surface text-xl md:text-2xl font-semibold transition-all duration-300 care-title">

@@ -692,7 +692,7 @@ export default function AdminDashboard({ onLogout }) {
       {/* Mobile Header Bar */}
       <header className="md:hidden sticky top-0 z-30 bg-surface/95 backdrop-blur-md border-b border-outline-variant/30 px-5 py-3.5 flex items-center justify-between shadow-xs">
         <div>
-          <h2 className="font-display-lg text-primary text-lg font-bold">Dr. Raveena Thallur</h2>
+          <h2 className="font-display-lg text-primary text-lg font-bold">Dr. Raveena Thalluru</h2>
           <p className="font-body-sm text-on-surface-variant text-[11px]">Admin Control Center</p>
         </div>
       </header>
@@ -722,8 +722,8 @@ export default function AdminDashboard({ onLogout }) {
                   setMobileMenuOpen(false);
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-label-md text-sm transition-all ${activeTab === tab.id
-                    ? 'bg-primary text-on-primary font-semibold shadow-md'
-                    : 'text-on-surface-variant hover:bg-surface-container-high'
+                  ? 'bg-primary text-on-primary font-semibold shadow-md'
+                  : 'text-on-surface-variant hover:bg-surface-container-high'
                   }`}
               >
                 <span className="material-symbols-outlined text-lg">{tab.icon}</span>
@@ -773,8 +773,8 @@ export default function AdminDashboard({ onLogout }) {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-label-md text-sm transition-colors ${activeTab === tab.id
-                  ? 'bg-primary text-on-primary font-semibold shadow-md'
-                  : 'text-on-surface-variant hover:bg-surface-container-high'
+                ? 'bg-primary text-on-primary font-semibold shadow-md'
+                : 'text-on-surface-variant hover:bg-surface-container-high'
                 }`}
             >
               <span className="material-symbols-outlined text-lg">{tab.icon}</span>
@@ -1002,7 +1002,7 @@ export default function AdminDashboard({ onLogout }) {
             <div className="flex items-center justify-between">
               <h1 className="font-display-lg text-primary text-3xl">Areas of Care (Specialties)</h1>
               <button
-                onClick={() => setCareModal({ open: true, data: { title: '', short_description: '', icon: 'child_care', display_order: careAreas.length + 1, is_published: true } })}
+                onClick={() => setCareModal({ open: true, data: { title: '', short_description: '', icon: '👶', display_order: careAreas.length + 1, is_published: true } })}
                 className="px-4 py-2 bg-primary text-on-primary rounded-xl font-label-md text-xs flex items-center gap-1"
               >
                 <span className="material-symbols-outlined text-sm">add</span>
@@ -1011,19 +1011,26 @@ export default function AdminDashboard({ onLogout }) {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {careAreas.map(item => (
-                <div key={item.id} className="bg-surface p-6 rounded-2xl border border-outline-variant/30 space-y-3 relative">
-                  <div className="flex items-start justify-between">
-                    <span className="material-symbols-outlined text-2xl text-primary">{item.icon || 'child_care'}</span>
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => setCareModal({ open: true, data: item })} className="text-secondary hover:text-primary text-xs">Edit</button>
-                      <button onClick={() => handleDeleteCareArea(item.id)} className="text-error text-xs">Delete</button>
+              {careAreas.map(item => {
+                const isEmoji = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E6}-\u{1F1FF}]/u.test(item.icon || '');
+                return (
+                  <div key={item.id} className="bg-surface p-6 rounded-2xl border border-outline-variant/30 space-y-3 relative">
+                    <div className="flex items-start justify-between">
+                      {isEmoji ? (
+                        <span className="text-2xl">{item.icon}</span>
+                      ) : (
+                        <span className="material-symbols-outlined text-2xl text-primary">{item.icon || 'child_care'}</span>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => setCareModal({ open: true, data: item })} className="text-secondary hover:text-primary text-xs">Edit</button>
+                        <button onClick={() => handleDeleteCareArea(item.id)} className="text-error text-xs">Delete</button>
+                      </div>
                     </div>
+                    <h3 className="font-headline-sm text-on-surface text-base">{item.title}</h3>
+                    <p className="font-body-sm text-on-surface-variant text-xs">{item.short_description}</p>
                   </div>
-                  <h3 className="font-headline-sm text-on-surface text-base">{item.title}</h3>
-                  <p className="font-body-sm text-on-surface-variant text-xs">{item.short_description}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Care Area Modal */}
@@ -1041,6 +1048,129 @@ export default function AdminDashboard({ onLogout }) {
                       className="w-full px-3 py-2 rounded-xl bg-surface-container-low border text-sm"
                     />
                   </div>
+
+                  {/* Theme-Matched Icon Selection Choice */}
+                  <div className="space-y-2.5">
+                    <label className="font-label-md text-xs uppercase font-semibold text-on-surface">Choose Theme Icon or Emoji</label>
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-primary-container/60 border border-primary/30 flex items-center justify-center text-primary text-2xl flex-shrink-0 shadow-sm overflow-hidden select-none">
+                        {/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E6}-\u{1F1FF}]/u.test(careModal.data?.icon || '') ? (
+                          <span>{careModal.data?.icon}</span>
+                        ) : (
+                          <span className="material-symbols-outlined text-primary text-2xl">
+                            {careModal.data?.icon === 'microscope' ? 'mic' : (careModal.data?.icon || 'child_care')}
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Icon name (e.g. child_care, microscope) or custom emoji"
+                        value={careModal.data?.icon || ''}
+                        onChange={e => setCareModal({ ...careModal, data: { ...careModal.data, icon: e.target.value } })}
+                        className="flex-1 px-3 py-2.5 rounded-xl bg-surface-container-low border text-sm text-on-surface font-medium"
+                      />
+                    </div>
+
+                    {/* Comprehensive Scrollable UI Theme Icons & Emojis Gallery */}
+                    <div className="pt-1 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[11px] text-on-surface-variant font-semibold uppercase tracking-wider">Select Theme Icon or Emoji:</p>
+                        <div className="flex items-center gap-1 bg-surface-container p-0.5 rounded-lg text-[10px] font-bold">
+                          <button
+                            type="button"
+                            onClick={() => setCareModal(prev => ({ ...prev, iconTab: 'theme' }))}
+                            className={`px-2.5 py-1 rounded-md transition-all ${
+                              (careModal.iconTab || 'theme') === 'theme'
+                                ? 'bg-primary text-on-primary shadow-xs'
+                                : 'text-on-surface-variant hover:text-on-surface'
+                            }`}
+                          >
+                            Theme Icons (18)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCareModal(prev => ({ ...prev, iconTab: 'emoji' }))}
+                            className={`px-2.5 py-1 rounded-md transition-all ${
+                              careModal.iconTab === 'emoji'
+                                ? 'bg-primary text-on-primary shadow-xs'
+                                : 'text-on-surface-variant hover:text-on-surface'
+                            }`}
+                          >
+                            Emojis (24)
+                          </button>
+                        </div>
+                      </div>
+
+                      {(careModal.iconTab || 'theme') === 'theme' ? (
+                        /* Scrollable Grid of 18 UI-Theme-Matched Icons */
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 p-2 bg-surface-container-low/70 rounded-2xl border border-outline-variant/40 max-h-48 overflow-y-auto custom-scrollbar">
+                          {[
+                            { id: 'child_care', label: 'Fertility / Baby' },
+                            { id: 'microscope', label: 'Evaluation' },
+                            { id: 'ecg_heart', label: 'PCOS Health' },
+                            { id: 'female', label: 'Hormonal Care' },
+                            { id: 'favorite', label: 'Counselling' },
+                            { id: 'stethoscope', label: 'Practice' },
+                            { id: 'health_and_safety', label: 'Wellness' },
+                            { id: 'vaccines', label: 'Therapy' },
+                            { id: 'medication', label: 'Pharmacy' },
+                            { id: 'spa', label: 'Holistic' },
+                            { id: 'pregnant_woman', label: 'Obstetrics' },
+                            { id: 'biotech', label: 'Genetics' },
+                            { id: 'bloodtype', label: 'Diagnostics' },
+                            { id: 'healing', label: 'Recovery' },
+                            { id: 'vital_signs', label: 'Vitals' },
+                            { id: 'clinical_notes', label: 'Consultation' },
+                            { id: 'family_restroom', label: 'Family' },
+                            { id: 'workspace_premium', label: 'Specialist' }
+                          ].map((iconObj) => {
+                            const isSelected = (careModal.data?.icon || 'child_care') === iconObj.id;
+                            return (
+                              <button
+                                key={iconObj.id}
+                                type="button"
+                                onClick={() => setCareModal({ ...careModal, data: { ...careModal.data, icon: iconObj.id } })}
+                                className={`p-2 rounded-xl flex flex-col items-center justify-center gap-1 transition-all overflow-hidden ${
+                                  isSelected
+                                    ? 'bg-primary text-on-primary shadow-md ring-2 ring-primary/40 scale-105'
+                                    : 'bg-surface text-primary hover:bg-primary-container/40 border border-outline-variant/20'
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-xl">
+                                  {isSelected && iconObj.id === 'microscope' ? 'mic' : iconObj.id}
+                                </span>
+                                <span className={`text-[9px] font-medium leading-tight text-center truncate max-w-full ${isSelected ? 'text-on-primary' : 'text-on-surface-variant'}`}>
+                                  {iconObj.label}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        /* Scrollable Palette of 24 Emojis matching UI containers */
+                        <div className="grid grid-cols-6 sm:grid-cols-8 gap-1.5 p-2 bg-surface-container-low/70 rounded-2xl border border-outline-variant/40 max-h-48 overflow-y-auto custom-scrollbar">
+                          {['👶', '🔬', '🩺', '🩸', '🤰', '💖', '🌸', '💊', '🏥', '⚡', '🧬', '💙', '✨', '🧘‍♀️', '💐', '🌿', '🎯', '🍼', '⭐', '💕', '👩‍⚕️', '❤️', '🕊️', '🧸'].map((emoji) => {
+                            const isSelected = careModal.data?.icon === emoji;
+                            return (
+                              <button
+                                key={emoji}
+                                type="button"
+                                onClick={() => setCareModal({ ...careModal, data: { ...careModal.data, icon: emoji } })}
+                                className={`h-9 rounded-xl text-lg flex items-center justify-center transition-all ${
+                                  isSelected
+                                    ? 'bg-primary text-on-primary scale-110 shadow-md ring-2 ring-primary/50'
+                                    : 'bg-surface hover:bg-primary-container/30 border border-outline-variant/20'
+                                }`}
+                              >
+                                {emoji}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="space-y-1">
                     <label className="font-label-md text-xs uppercase font-semibold">Short Description</label>
                     <textarea
