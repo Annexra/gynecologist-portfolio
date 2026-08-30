@@ -138,6 +138,18 @@ export default function PublicWebsite() {
               el.style.transform = `translate3d(0, ${translateY.toFixed(2)}px, 0)`;
             }
           });
+
+          // Dedicated About Section Image Parallax
+          const aboutImg = document.querySelector('.about-parallax-img');
+          if (aboutImg) {
+            const rect = aboutImg.getBoundingClientRect();
+            if (rect.top < vh && rect.bottom > 0) {
+              const centerDist = (rect.top + rect.height / 2) - (vh / 2);
+              const translateY = centerDist * 0.075; // Smooth parallax movement inside clipped container
+              aboutImg.style.transform = `scale(1.15) translate3d(0, ${translateY.toFixed(2)}px, 0)`;
+            }
+          }
+
           ticking = false;
         });
       };
@@ -236,8 +248,8 @@ export default function PublicWebsite() {
             <div className="absolute top-0 right-0 w-64 h-64 bg-secondary-fixed opacity-40 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
             <div className="w-full max-w-container-max mx-auto grid grid-cols-1 lg:grid-cols-12 gap-stack-lg items-center">
               <div className="lg:col-span-5 lg:col-start-2 relative">
-                <div className="aspect-square rounded-3xl overflow-hidden shadow-xl reveal-mask border border-outline-variant/30">
-                  <img className="w-full h-full object-cover" alt={profile?.name || 'Dr. Raveena Thalluru'} src={about?.photo_url || profile?.photo_url || 'assets/dr_raveena.jpeg'} />
+                <div className="aspect-square rounded-3xl overflow-hidden shadow-xl reveal-mask border border-outline-variant/30 subtle-card-glow relative">
+                  <img className="w-full h-full object-cover about-parallax-img scale-110 transition-transform duration-150 ease-out" alt={profile?.name || 'Dr. Raveena Thalluru'} src={about?.photo_url || profile?.photo_url || 'assets/dr_raveena.jpeg'} />
                 </div>
                 {/* BRAND SIGNATURE SYMBOL EMBLEM */}
                 <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-primary text-on-primary rounded-full flex flex-col items-center justify-center shadow-xl brand-signature cursor-pointer timeline-node interactive-element">
