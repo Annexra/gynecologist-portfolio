@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { publicContentService, getDynamicMapQuery, getDynamicMapEmbedUrl } from '../services/contentService';
 import UterusCanvas from './UterusCanvas';
+import WomensHealthLab from './WomensHealthLab';
 
 export default function PublicWebsite() {
   const [profile, setProfile] = useState(null);
@@ -155,6 +156,7 @@ export default function PublicWebsite() {
             <a className="transition-colors text-primary font-semibold interactive-element text-sm" href="#top">Home</a>
             <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#about">About</a>
             <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#care-areas">Care Areas</a>
+            <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#health-lab">Health Lab</a>
             <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#education">Education</a>
             <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#practice">Practice</a>
             <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#approach">Approach</a>
@@ -271,6 +273,9 @@ export default function PublicWebsite() {
               </div>
             </div>
           </section>
+
+          {/* WOMEN'S HEALTH LAB INTERACTIVE 3D EXPERIENCE */}
+          <WomensHealthLab />
 
           {/* EDUCATION & PRACTICE SECTION — JOURNEY & LAYERED DEPTH */}
           <section className="py-section-gap px-margin bg-surface-container-low border-y border-outline-variant/30">

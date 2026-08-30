@@ -21,5 +21,8 @@
     "react-dom": "^19.2.8",
     "three": "^0.185.1",
     "vite": "^8.2.2"
+  },
+  "devDependencies": {
+    "gltf-pipeline": "^4.3.1"
   }
 }
