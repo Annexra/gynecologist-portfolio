@@ -537,6 +537,7 @@ export default function AdminDashboard({ onLogout }) {
     setSaving(true);
     try {
       await adminContentService.updateAboutContent(about);
+      window.dispatchEvent(new Event('cms_about_updated'));
       showNotice('About section updated successfully!');
     } catch (err) {
       showNotice('Failed to update about section: ' + err.message, 'error');
@@ -555,8 +556,12 @@ export default function AdminDashboard({ onLogout }) {
       const result = await adminContentService.uploadMedia(file);
       if (objectType === 'profile') {
         setProfile(prev => ({ ...prev, [targetField]: result.url }));
+        window.dispatchEvent(new Event('cms_profile_updated'));
       } else if (objectType === 'about') {
-        setAbout(prev => ({ ...prev, [targetField]: result.url }));
+        const updatedAbout = { ...about, [targetField]: result.url };
+        setAbout(updatedAbout);
+        await adminContentService.updateAboutContent(updatedAbout);
+        window.dispatchEvent(new Event('cms_about_updated'));
       }
       showNotice('Media uploaded successfully!');
     } catch (err) {
@@ -909,20 +914,6 @@ export default function AdminDashboard({ onLogout }) {
                   onChange={e => setProfile({ ...profile, hero_description: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface"
                 />
-              </div>
-
-              <div className="space-y-2">
-                <label className="font-label-md text-xs uppercase font-semibold text-on-surface">Profile Photo</label>
-                <div className="flex items-center gap-4">
-                  <img src={profile.photo_url || 'assets/dr_raveena.jpeg'} alt="Preview" className="w-16 h-16 rounded-2xl object-cover border" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={e => handleImageUpload(e, 'photo_url', 'profile')}
-                    disabled={uploading}
-                    className="text-xs text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-secondary-container file:text-on-secondary-container hover:file:opacity-90"
-                  />
-                </div>
               </div>
 
               <button

@@ -43,10 +43,14 @@ export default function PublicWebsite() {
 
     const handleSync = () => loadAllContent();
     window.addEventListener('cms_contact_updated', handleSync);
+    window.addEventListener('cms_about_updated', handleSync);
+    window.addEventListener('cms_profile_updated', handleSync);
     window.addEventListener('storage', handleSync);
 
     return () => {
       window.removeEventListener('cms_contact_updated', handleSync);
+      window.removeEventListener('cms_about_updated', handleSync);
+      window.removeEventListener('cms_profile_updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
   }, []);
@@ -143,15 +147,15 @@ export default function PublicWebsite() {
       {/* Header */}
       <header className="fixed top-0 w-full z-50 transition-all duration-500 bg-transparent" id="global-header">
         <div className="h-20 max-w-container-max mx-auto px-margin flex items-center justify-between">
-          <div className="flex items-center gap-3 interactive-element">
-            <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold shadow-sm">
+          <a href="#about" className="flex items-center gap-3 interactive-element cursor-pointer group">
+            <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold shadow-sm group-hover:bg-primary group-hover:text-on-primary transition-all">
               <span className="material-symbols-outlined text-xl">stethoscope</span>
             </div>
             <div>
-              <span className="font-headline-sm text-on-surface tracking-tight block text-base font-semibold">{profile?.name || 'Dr. Raveena Thalluru'}</span>
+              <span className="font-headline-sm text-on-surface tracking-tight block text-base font-semibold group-hover:text-primary transition-colors">{profile?.name || 'Dr. Raveena Thalluru'}</span>
               <span className="text-[10px] text-on-surface-variant uppercase tracking-widest block font-medium">Obstetrician & Gynecologist</span>
             </div>
-          </div>
+          </a>
           <nav className="hidden lg:flex items-center gap-8">
             <a className="transition-colors text-primary font-semibold interactive-element text-sm" href="#top">Home</a>
             <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#about">About</a>
@@ -205,7 +209,7 @@ export default function PublicWebsite() {
             <div className="w-full max-w-container-max mx-auto grid grid-cols-1 lg:grid-cols-12 gap-stack-lg items-center">
               <div className="lg:col-span-5 lg:col-start-2 relative">
                 <div className="aspect-square rounded-3xl overflow-hidden shadow-xl reveal-mask border border-outline-variant/30">
-                  <img className="w-full h-full object-cover" alt={profile?.name || 'Dr. Raveena Thalluru'} src={profile?.photo_url || about?.photo_url || 'assets/dr_raveena.jpeg'} />
+                  <img className="w-full h-full object-cover" alt={profile?.name || 'Dr. Raveena Thalluru'} src={about?.photo_url || profile?.photo_url || 'assets/dr_raveena.jpeg'} />
                 </div>
                 {/* BRAND SIGNATURE SYMBOL EMBLEM */}
                 <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-primary text-on-primary rounded-full flex flex-col items-center justify-center shadow-xl brand-signature cursor-pointer timeline-node interactive-element">
