@@ -692,7 +692,7 @@ export default function AdminDashboard({ onLogout }) {
       {/* Mobile Header Bar */}
       <header className="md:hidden sticky top-0 z-30 bg-surface/95 backdrop-blur-md border-b border-outline-variant/30 px-5 py-3.5 flex items-center justify-between shadow-xs">
         <div>
-          <h2 className="font-display-lg text-primary text-lg font-bold">Dr. Raveena CMS</h2>
+          <h2 className="font-display-lg text-primary text-lg font-bold">Dr. Raveena Thallur</h2>
           <p className="font-body-sm text-on-surface-variant text-[11px]">Admin Control Center</p>
         </div>
       </header>
@@ -721,11 +721,10 @@ export default function AdminDashboard({ onLogout }) {
                   setActiveTab(tab.id);
                   setMobileMenuOpen(false);
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-label-md text-sm transition-all ${
-                  activeTab === tab.id
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-label-md text-sm transition-all ${activeTab === tab.id
                     ? 'bg-primary text-on-primary font-semibold shadow-md'
                     : 'text-on-surface-variant hover:bg-surface-container-high'
-                }`}
+                  }`}
               >
                 <span className="material-symbols-outlined text-lg">{tab.icon}</span>
                 <span>{tab.label}</span>
@@ -773,11 +772,10 @@ export default function AdminDashboard({ onLogout }) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-label-md text-sm transition-colors ${
-                activeTab === tab.id
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-label-md text-sm transition-colors ${activeTab === tab.id
                   ? 'bg-primary text-on-primary font-semibold shadow-md'
                   : 'text-on-surface-variant hover:bg-surface-container-high'
-              }`}
+                }`}
             >
               <span className="material-symbols-outlined text-lg">{tab.icon}</span>
               <span>{tab.label}</span>
@@ -809,9 +807,8 @@ export default function AdminDashboard({ onLogout }) {
       <main className="flex-1 p-6 md:p-10 max-w-5xl overflow-y-auto">
         {/* Status Toast Notice */}
         {statusMessage && (
-          <div className={`mb-6 p-4 rounded-xl text-sm flex items-center justify-between shadow-lg ${
-            statusMessage.type === 'error' ? 'bg-error-container text-on-error-container' : 'bg-tertiary-container text-on-tertiary-container'
-          }`}>
+          <div className={`mb-6 p-4 rounded-xl text-sm flex items-center justify-between shadow-lg ${statusMessage.type === 'error' ? 'bg-error-container text-on-error-container' : 'bg-tertiary-container text-on-tertiary-container'
+            }`}>
             <span className="font-semibold">{statusMessage.msg}</span>
             <button onClick={() => setStatusMessage(null)} className="material-symbols-outlined text-sm">close</button>
           </div>

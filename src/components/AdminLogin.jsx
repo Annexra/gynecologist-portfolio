@@ -34,7 +34,7 @@ export default function AdminLogin({ onLoginSuccess }) {
           <div className="w-12 h-12 rounded-full bg-primary-container mx-auto flex items-center justify-center mb-2">
             <span className="material-symbols-outlined text-on-primary-container text-2xl">admin_panel_settings</span>
           </div>
-          <h1 className="font-display-lg text-primary text-3xl">Dr. Raveena CMS</h1>
+          <h1 className="font-display-lg text-primary text-3xl">Dr. Raveena Thallur</h1>
           <p className="font-body-md text-on-surface-variant text-sm">Protected Administrator Authentication</p>
         </div>
 
