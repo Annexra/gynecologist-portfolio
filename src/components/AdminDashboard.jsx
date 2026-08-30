@@ -50,6 +50,166 @@ function InteractiveMapModal({ initialQuery, contact, onConfirm, onClose }) {
     return q;
   };
 
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const initMap = async () => {
+      if (!window.L) {
+        if (!document.getElementById('leaflet-css')) {
+          const link = document.createElement('link');
+          link.id = 'leaflet-css';
+          link.rel = 'stylesheet';
+          link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+          document.head.appendChild(link);
+        }
+
+        if (!window.leafletLoadingPromise) {
+          window.leafletLoadingPromise = new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+            script.onload = resolve;
+            document.head.appendChild(script);
+          });
+        }
+        await window.leafletLoadingPromise;
+      }
+
+      if (!isMounted || !mapRef.current) return;
+
+      if (!mapInstanceRef.current && window.L) {
+        const L = window.L;
+        const initialLat = selectedCoords.lat;
+        const initialLng = selectedCoords.lng;
+
+        const map = L.map(mapRef.current).setView([initialLat, initialLng], 13);
+        mapInstanceRef.current = map;
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        const customIcon = L.divIcon({
+          className: 'custom-map-pin',
+          html: `<div style="background-color: #7d4d7a; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2.5px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;"><div style="width: 10px; height: 10px; background-color: white; border-radius: 50%;"></div></div>`,
+          iconSize: [30, 30],
+          iconAnchor: [15, 30]
+        });
+
+        const marker = L.marker([initialLat, initialLng], {
+          draggable: true,
+          icon: customIcon
+        }).addTo(map);
+        markerRef.current = marker;
+
+        marker.on('dragend', async (e) => {
+          const { lat, lng } = e.target.getLatLng();
+          setSelectedCoords({ lat, lng });
+          await reverseGeocode(lat, lng);
+        });
+
+        map.on('click', async (e) => {
+          const { lat, lng } = e.latlng;
+          marker.setLatLng([lat, lng]);
+          setSelectedCoords({ lat, lng });
+          await reverseGeocode(lat, lng);
+        });
+
+        const cleanInitial = sanitizeQueryText(initialQuery);
+        if (cleanInitial) {
+          geocodeSearch(cleanInitial, map, marker);
+        }
+      }
+    };
+
+    initMap();
+
+    return () => {
+      isMounted = false;
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []);
+
+  // Fetch Live Autocomplete Suggestions as user types
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+    setLocationVerified(false);
+    if (searchError) setSearchError(null);
+
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    const cleanVal = sanitizeQueryText(val);
+    if (!cleanVal || cleanVal.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    setSearchLoading(true);
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleanVal)}&limit=5&addressdetails=1`);
+        const data = await res.json();
+        if (data && Array.isArray(data) && data.length > 0) {
+          setSuggestions(data);
+          setShowSuggestions(true);
+        } else {
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
+      } catch (err) {
+        console.error('Autocomplete fetch error:', err);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+  };
+
+  const handleSelectSuggestion = (placeItem) => {
+    const lat = parseFloat(placeItem.lat);
+    const lng = parseFloat(placeItem.lon);
+    const addressText = placeItem.display_name;
+
+    setSelectedCoords({ lat, lng });
+    setSelectedAddress(addressText);
+    setSearchQuery(addressText);
+    setLocationVerified(true);
+    setSearchError(null);
+    setShowSuggestions(false);
+
+    if (mapInstanceRef.current && markerRef.current) {
+      mapInstanceRef.current.setView([lat, lng], 16);
+      markerRef.current.setLatLng([lat, lng]);
+    }
+  };
+
+  const reverseGeocode = async (lat, lng) => {
+    setLoading(true);
+    setSearchError(null);
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+      const data = await res.json();
+      if (data && data.display_name) {
+        const addressText = data.display_name;
+        setSelectedAddress(addressText);
+        setSearchQuery(addressText);
+        setLocationVerified(true);
+      } else {
+        setLocationVerified(false);
+        setSearchError('Could not find address details for this map point. Please select a valid location.');
+      }
+    } catch (err) {
+      console.error('Reverse geocode error:', err);
+      setSearchError('Failed to fetch address. Please check your connection.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const geocodeSearch = async (queryText, targetMap, targetMarker) => {
     const rawClean = sanitizeQueryText(queryText);
     if (!rawClean) {
@@ -80,11 +240,10 @@ function InteractiveMapModal({ initialQuery, contact, onConfirm, onClose }) {
       }
     }
 
-    // 2. Progressive Geocoding Fallback (Searches full query, then fallback sub-queries if specific building detail isn't in OpenStreetMap database)
+    // 2. Progressive Geocoding Fallback
     const parts = rawClean.split(',').map(s => s.trim()).filter(Boolean);
     const queriesToTry = [rawClean];
 
-    // Try combinations removing leading room/floor specific details (e.g. "Level 4, Specialist Medical Centre, Perungudi, Chennai" -> "Specialist Medical Centre, Perungudi, Chennai" -> "Perungudi, Chennai")
     for (let i = 1; i < parts.length; i++) {
       const subQuery = parts.slice(i).join(', ');
       if (subQuery && !queriesToTry.includes(subQuery)) {
@@ -94,14 +253,12 @@ function InteractiveMapModal({ initialQuery, contact, onConfirm, onClose }) {
 
     try {
       let foundData = null;
-      let matchedQuery = '';
 
       for (const qToTry of queriesToTry) {
         const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(qToTry)}&limit=5&addressdetails=1`);
         const data = await res.json();
         if (data && Array.isArray(data) && data.length > 0) {
           foundData = data[0];
-          matchedQuery = qToTry;
           break;
         }
       }
@@ -109,7 +266,6 @@ function InteractiveMapModal({ initialQuery, contact, onConfirm, onClose }) {
       if (foundData) {
         const lat = parseFloat(foundData.lat);
         const lng = parseFloat(foundData.lon);
-        // Use user's detailed input if specific, otherwise use geocoded display_name
         const addressText = rawClean.length > 3 ? rawClean : (foundData.display_name || rawClean);
 
         const map = targetMap || mapInstanceRef.current;
