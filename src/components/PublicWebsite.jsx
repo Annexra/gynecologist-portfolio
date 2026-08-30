@@ -118,9 +118,37 @@ export default function PublicWebsite() {
       revealObserver.observe(el);
     });
 
+    // Subtle Micro-Parallax Scroll Animation for Text Container Divs
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let handleParallaxScroll;
+    let ticking = false;
+
+    if (!prefersReducedMotion) {
+      const parallaxTargets = document.querySelectorAll('.reveal-text, .care-editorial-item, .layered-card, .timeline-node');
+      handleParallaxScroll = () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          const vh = window.innerHeight;
+          parallaxTargets.forEach((el) => {
+            const rect = el.getBoundingClientRect();
+            if (rect.top < vh && rect.bottom > 0) {
+              const centerDist = (rect.top + rect.height / 2) - (vh / 2);
+              const translateY = centerDist * -0.025; // Gentle, elegant micro-parallax (-8px to +8px)
+              el.style.transform = `translate3d(0, ${translateY.toFixed(2)}px, 0)`;
+            }
+          });
+          ticking = false;
+        });
+      };
+      window.addEventListener('scroll', handleParallaxScroll, { passive: true });
+      handleParallaxScroll();
+    }
+
     return () => {
       document.body.classList.remove('public-site', 'cursor-hover');
       if (handleMouseMove) document.removeEventListener('mousemove', handleMouseMove);
+      if (handleParallaxScroll) window.removeEventListener('scroll', handleParallaxScroll);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('scroll', handleProgress);
     };
@@ -179,11 +207,11 @@ export default function PublicWebsite() {
             </div>
             
             <div className="w-full max-w-container-max mx-auto grid grid-cols-1 lg:grid-cols-12 gap-gutter items-center h-full">
-              <div className="lg:col-span-6 space-y-8 z-10 reveal-text p-4 sm:p-6 lg:p-0 rounded-3xl bg-gradient-to-r from-surface/90 via-surface/75 to-transparent lg:bg-none backdrop-blur-[2px] lg:backdrop-blur-none" id="hero-content">
+              <div className="lg:col-span-6 space-y-8 z-10 reveal-text p-4 sm:p-6 lg:p-8 rounded-3xl bg-gradient-to-r from-surface/90 via-surface/75 to-transparent lg:bg-none backdrop-blur-[2px] lg:backdrop-blur-none subtle-card-glow" id="hero-content">
                 <span className="inline-block px-4 py-2 rounded-full bg-secondary-container text-on-secondary-container font-label-md uppercase tracking-wider text-xs font-semibold shadow-sm backdrop-blur-sm bg-opacity-80">
                   {profile?.title || 'Obstetrician & Gynaecologist'} | {profile?.clinic_name || 'IVF & Fertility Care'}
                 </span>
-                <h1 className="font-display-lg text-on-surface text-5xl md:text-7xl lg:text-[76px] leading-[1.08] tracking-tight">
+                <h1 className="font-display-lg text-on-surface text-5xl md:text-7xl lg:text-[76px] leading-[1.08] tracking-tight subtle-text-glow">
                   Compassionate Care. <br/>
                   <span className="text-primary italic font-serif">Advanced Fertility Solutions.</span> <br/>
                   Healthier Futures.
@@ -217,9 +245,9 @@ export default function PublicWebsite() {
                   <span className="text-[9px] font-label-md tracking-wider uppercase font-bold mt-0.5">Care</span>
                 </div>
               </div>
-              <div className="lg:col-span-6 lg:pl-12 space-y-6 reveal-text">
+              <div className="lg:col-span-6 lg:pl-12 space-y-6 reveal-text p-6 sm:p-8 rounded-3xl bg-surface/40 border border-outline-variant/20 subtle-card-glow">
                 <span className="font-label-md text-secondary uppercase tracking-widest text-xs font-semibold">About Doctor</span>
-                <h2 className="font-display-lg text-primary text-4xl md:text-5xl">{about?.heading || `Meet ${profile?.name || 'Dr. Raveena Thalluru'}`}</h2>
+                <h2 className="font-display-lg text-primary text-4xl md:text-5xl subtle-text-glow">{about?.heading || `Meet ${profile?.name || 'Dr. Raveena Thalluru'}`}</h2>
                 <div className="h-1 w-20 bg-secondary rounded-full"></div>
                 <p className="font-body-lg text-on-surface-variant leading-relaxed text-lg">
                   {about?.paragraph_1}
@@ -237,7 +265,7 @@ export default function PublicWebsite() {
               <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6 reveal-text">
                 <div>
                   <span className="font-label-md text-secondary uppercase tracking-widest text-xs font-semibold">Specialized Expertise</span>
-                  <h2 className="font-display-lg text-on-surface text-4xl md:text-5xl mt-2">Areas of Care</h2>
+                  <h2 className="font-display-lg text-on-surface text-4xl md:text-5xl mt-2 subtle-text-glow">Areas of Care</h2>
                 </div>
                 <p className="font-body-md text-on-surface-variant text-base max-w-md">
                   Comprehensive reproductive & fertility services tailored thoughtfully to your unique path to parenthood.
@@ -249,7 +277,7 @@ export default function PublicWebsite() {
                 {careAreas.map((area, idx) => (
                   <div
                     key={area.id || idx}
-                    className="care-editorial-item py-6 px-6 md:px-8 rounded-2xl bg-surface-container-low/60 border-b border-outline-variant/30 flex flex-col md:flex-row md:items-center justify-between gap-6 interactive-element group cursor-pointer timeline-node"
+                    className="care-editorial-item py-6 px-6 md:px-8 rounded-2xl bg-surface-container-low/60 border-b border-outline-variant/30 flex flex-col md:flex-row md:items-center justify-between gap-6 interactive-element group cursor-pointer timeline-node subtle-card-glow"
                     style={{ transitionDelay: `${idx * 70}ms` }}
                   >
                     <div className="flex items-start md:items-center gap-6 w-full">
@@ -293,7 +321,7 @@ export default function PublicWebsite() {
                   </div>
                   <div>
                     <span className="font-label-md text-secondary uppercase tracking-widest text-xs font-semibold">Academic Foundation</span>
-                    <h2 className="font-display-lg text-on-surface text-3xl md:text-4xl font-bold">Education & Medical Training</h2>
+                    <h2 className="font-display-lg text-on-surface text-3xl md:text-4xl font-bold subtle-text-glow">Education & Medical Training</h2>
                   </div>
                 </div>
 
@@ -305,7 +333,7 @@ export default function PublicWebsite() {
                       style={{ transitionDelay: `${index * 120}ms` }}
                     >
                       <div className="absolute -left-8 top-4 w-4 h-4 rounded-full bg-primary ring-4 ring-primary/20 group-hover:ring-primary/50 group-hover:scale-125 transition-all duration-300 shadow-md" />
-                      <div className="p-6 rounded-2xl bg-surface border border-outline-variant/30 shadow-sm hover:shadow-md transition-all duration-300 space-y-2">
+                      <div className="p-6 rounded-2xl bg-surface border border-outline-variant/30 shadow-sm hover:shadow-md transition-all duration-300 space-y-2 subtle-card-glow">
                         <div className="flex items-center justify-between gap-4">
                           <span className="inline-block px-3 py-1 rounded-full bg-primary-container/60 text-primary text-xs font-bold font-label-md uppercase tracking-wider">
                             {edu.degree}
@@ -333,11 +361,11 @@ export default function PublicWebsite() {
                   </div>
                   <div>
                     <span className="font-label-md text-secondary uppercase tracking-widest text-xs font-semibold">Clinical Presence</span>
-                    <h2 className="font-display-lg text-on-surface text-3xl md:text-4xl font-bold">Current Practice</h2>
+                    <h2 className="font-display-lg text-on-surface text-3xl md:text-4xl font-bold subtle-text-glow">Current Practice</h2>
                   </div>
                 </div>
 
-                <div className="bg-surface p-8 rounded-3xl border border-outline-variant/40 shadow-lg relative overflow-hidden layered-card timeline-node">
+                <div className="bg-surface p-8 rounded-3xl border border-outline-variant/40 shadow-lg relative overflow-hidden layered-card timeline-node subtle-card-glow">
                   <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
                   <span className="inline-block px-3.5 py-1.5 rounded-full bg-primary text-on-primary font-label-md text-xs font-bold uppercase tracking-wider mb-4 shadow-sm">
                     Active Clinical Center
@@ -378,7 +406,7 @@ export default function PublicWebsite() {
             <div className="w-full max-w-container-max mx-auto relative z-10">
               <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
                 <span className="font-label-md text-on-primary-container uppercase tracking-widest text-xs font-semibold opacity-90">Philosophy of Care</span>
-                <h2 className="font-display-lg text-4xl md:text-5xl font-bold">Patient Approach</h2>
+                <h2 className="font-display-lg text-4xl md:text-5xl font-bold subtle-text-glow">Patient Approach</h2>
                 <p className="font-body-md text-primary-fixed-dim text-lg">Four guiding pillars ensuring confidential, empathetic, and personalized clinical care.</p>
               </div>
 
@@ -386,7 +414,7 @@ export default function PublicWebsite() {
                 {patientApproach.map((item, idx) => (
                   <div 
                     key={item.id || idx} 
-                    className="bg-on-primary-fixed/15 p-8 rounded-3xl border border-on-primary/10 backdrop-blur-md hover:bg-on-primary-fixed/25 hover:border-on-primary/30 transition-all duration-300 timeline-node space-y-4 shadow-lg hover:-translate-y-1"
+                    className="bg-on-primary-fixed/15 p-8 rounded-3xl border border-on-primary/10 backdrop-blur-md hover:bg-on-primary-fixed/25 hover:border-on-primary/30 transition-all duration-300 timeline-node space-y-4 shadow-lg hover:-translate-y-1 subtle-card-glow"
                     style={{ transitionDelay: `${idx * 100}ms` }}
                   >
                     <div className="text-2xl font-mono font-bold text-primary-fixed-dim opacity-70">
@@ -403,11 +431,11 @@ export default function PublicWebsite() {
           {/* CONTACT SECTION */}
           <section className="py-section-gap px-margin bg-surface relative overflow-hidden" id="contact">
             <div className="w-full max-w-container-max mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-              <div className="lg:col-span-5 space-y-8 z-10 reveal-text">
-                <h2 className="font-display-lg text-primary text-4xl md:text-5xl">{contact?.heading || 'Begin Your Journey'}</h2>
+              <div className="lg:col-span-5 space-y-8 z-10 reveal-text p-6 rounded-3xl bg-surface-container-low/40 border border-outline-variant/20 subtle-card-glow">
+                <h2 className="font-display-lg text-primary text-4xl md:text-5xl subtle-text-glow">{contact?.heading || 'Begin Your Journey'}</h2>
                 <p className="font-body-lg text-on-surface-variant">{contact?.subheading}</p>
                 <div className="space-y-6">
-                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-colors interactive-element border border-outline-variant/30">
+                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-colors interactive-element border border-outline-variant/30 subtle-card-glow">
                     <div className="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center flex-shrink-0">
                       <span className="material-symbols-outlined text-on-secondary-container">call</span>
                     </div>

@@ -85,7 +85,19 @@ header.scrolled {
   z-index: 10000; width: 0%; transition: width 0.1s linear;
 }
 
-/* Animations */
+/* Animations & Subtle Ambient Glow */
+.subtle-text-glow {
+  text-shadow: 0 0 24px rgba(225, 29, 72, 0.08), 0 0 45px rgba(181, 10, 83, 0.04);
+}
+
+.subtle-card-glow {
+  box-shadow: 0 10px 30px -10px rgba(181, 10, 83, 0.06), 0 0 20px 1px rgba(225, 29, 72, 0.04);
+  transition: box-shadow 0.4s ease-out, border-color 0.4s ease-out;
+}
+.subtle-card-glow:hover {
+  box-shadow: 0 16px 40px -12px rgba(181, 10, 83, 0.12), 0 0 28px 3px rgba(225, 29, 72, 0.08);
+}
+
 .reveal-mask {
   transition: opacity 0.8s ease-out;
 }
