@@ -65,11 +65,12 @@ const INITIAL_DATA = {
 
 export function getDynamicMapQuery(contact) {
   if (!contact) return 'LIVF Fertility, Chennai';
-  const address = contact.address_display || '';
+  const filterUrl = (str) => (typeof str === 'string' && !str.includes('http://') && !str.includes('https://') && !str.includes('maps.google')) ? str : '';
+  const address = filterUrl(contact.address_display) || '';
   const locs = Array.isArray(contact.locations) 
-    ? contact.locations.join(', ') 
-    : (contact.locations || '');
-  const city = contact.city || '';
+    ? contact.locations.map(filterUrl).filter(Boolean).join(', ') 
+    : filterUrl(contact.locations) || '';
+  const city = filterUrl(contact.city) || '';
   const parts = [address, locs, city].filter(Boolean);
   return parts.length > 0 ? parts.join(', ') : 'LIVF Fertility, Chennai';
 }
@@ -84,33 +85,63 @@ export function parseLocationQueryToContact(queryOrUrl, existingContact = {}) {
 
   let raw = queryOrUrl.trim();
 
+  // Handle iframe code paste
   if (raw.includes('<iframe')) {
     const match = raw.match(/src=["']([^"']+)["']/);
     if (match && match[1]) raw = match[1];
   }
 
+  let extractedText = '';
+
   if (raw.includes('http://') || raw.includes('https://')) {
     try {
       const urlObj = new URL(raw);
       const q = urlObj.searchParams.get('q') || urlObj.searchParams.get('query');
-      if (q) raw = decodeURIComponent(q);
+      if (q && !q.includes('http://') && !q.includes('https://')) {
+        extractedText = decodeURIComponent(q);
+      } else if (urlObj.pathname.includes('/place/')) {
+        const placeMatch = urlObj.pathname.match(/\/place\/([^/]+)/);
+        if (placeMatch && placeMatch[1]) {
+          extractedText = decodeURIComponent(placeMatch[1].replace(/\+/g, ' ')).replace(/@.*$/, '');
+        }
+      }
     } catch (e) {
+      // Fallback regex search for q= parameter
       const qMatch = raw.match(/[?&](?:q|query)=([^&]+)/);
-      if (qMatch && qMatch[1]) raw = decodeURIComponent(qMatch[1]);
+      if (qMatch && qMatch[1] && !qMatch[1].includes('http')) {
+        try {
+          extractedText = decodeURIComponent(qMatch[1]);
+        } catch (e2) {
+          extractedText = qMatch[1];
+        }
+      }
     }
+  } else {
+    extractedText = raw;
   }
 
-  raw = raw.replace(/^https?:\/\/maps\.google\.com\/maps\?q=/i, '');
-  raw = raw.replace(/&.*$/, '');
-  try {
-    raw = decodeURIComponent(raw).trim();
-  } catch (e) {
-    raw = raw.trim();
+  // Sanitize extractedText to ensure no URL leaks into text fields
+  if (extractedText.includes('http://') || extractedText.includes('https://') || extractedText.includes('maps.google')) {
+    extractedText = '';
   }
 
-  if (!raw) return existingContact;
+  extractedText = extractedText.replace(/^https?:\/\/.*$/i, '').trim();
 
-  const parts = raw.split(',').map(s => s.trim()).filter(Boolean);
+  const finalMapLink = (raw.includes('http://') || raw.includes('https://'))
+    ? raw
+    : (extractedText 
+        ? `https://maps.google.com/maps?q=${encodeURIComponent(extractedText)}&t=&z=15&ie=UTF8&iwloc=&output=embed`
+        : (existingContact.map_link || ''));
+
+  // If no clean text could be extracted from a raw URL, keep existing address fields clean!
+  if (!extractedText) {
+    return {
+      ...existingContact,
+      map_link: finalMapLink || existingContact.map_link
+    };
+  }
+
+  const parts = extractedText.split(',').map(s => s.trim()).filter(Boolean);
 
   let address_display = existingContact.address_display || '';
   let locations = Array.isArray(existingContact.locations) ? [...existingContact.locations] : [];
@@ -152,14 +183,28 @@ export function parseLocationQueryToContact(queryOrUrl, existingContact = {}) {
     }
   }
 
-  const dynamicEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(raw)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+  // Safety filter to prevent any raw URL from being saved into text fields
+  const isUrl = (s) => typeof s === 'string' && (s.includes('http://') || s.includes('https://') || s.includes('maps.google'));
+
+  if (isUrl(address_display)) {
+    address_display = !isUrl(existingContact.address_display) ? existingContact.address_display : 'Specialist Medical Centre';
+  }
+  locations = locations.filter(l => !isUrl(l));
+  if (locations.length === 0) {
+    locations = Array.isArray(existingContact.locations) && existingContact.locations.every(l => !isUrl(l))
+      ? existingContact.locations
+      : ['Chennai Clinic'];
+  }
+  if (isUrl(city)) {
+    city = !isUrl(existingContact.city) ? existingContact.city : 'Chennai, Tamil Nadu';
+  }
 
   return {
     ...existingContact,
     address_display,
     locations,
     city,
-    map_link: dynamicEmbedUrl
+    map_link: finalMapLink
   };
 }
 

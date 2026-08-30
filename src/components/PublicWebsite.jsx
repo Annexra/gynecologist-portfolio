@@ -142,26 +142,24 @@ export default function PublicWebsite() {
       {/* Header */}
       <header className="fixed top-0 w-full z-50 transition-all duration-500 bg-transparent" id="global-header">
         <div className="h-20 max-w-container-max mx-auto px-margin flex items-center justify-between">
-          <div className="flex items-center gap-2 interactive-element">
-            <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center">
-              <span className="material-symbols-outlined text-on-primary-container text-[20px]">medical_services</span>
+          <div className="flex items-center gap-3 interactive-element">
+            <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold shadow-sm">
+              <span className="material-symbols-outlined text-xl">stethoscope</span>
             </div>
-            <span className="font-headline-sm text-on-surface tracking-tight">{profile?.name || 'Dr. Raveena Thalluru'}</span>
+            <div>
+              <span className="font-headline-sm text-on-surface tracking-tight block text-base font-semibold">{profile?.name || 'Dr. Raveena Thalluru'}</span>
+              <span className="text-[10px] text-on-surface-variant uppercase tracking-widest block font-medium">Obstetrician & Gynecologist</span>
+            </div>
           </div>
           <nav className="hidden lg:flex items-center gap-8">
-            <a className="transition-colors text-primary font-semibold interactive-element" href="#top">Home</a>
-            <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element" href="#about">About</a>
-            <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element" href="#care-areas">Care Areas</a>
-            <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element" href="#education">Education</a>
-            <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element" href="#practice">Practice</a>
-            <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element" href="#approach">Approach</a>
-            <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element" href="#contact">Contact</a>
+            <a className="transition-colors text-primary font-semibold interactive-element text-sm" href="#top">Home</a>
+            <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#about">About</a>
+            <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#care-areas">Care Areas</a>
+            <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#education">Education</a>
+            <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#practice">Practice</a>
+            <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#approach">Approach</a>
+            <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#contact">Contact</a>
           </nav>
-          <div className="flex items-center gap-6">
-            <a href="/admin/login" className="w-8 h-8 rounded-full bg-primary flex items-center justify-center interactive-element" title="Admin CMS Portal">
-              <span className="material-symbols-outlined text-on-primary text-[18px]">person</span>
-            </a>
-          </div>
         </div>
       </header>
 
@@ -176,12 +174,12 @@ export default function PublicWebsite() {
             
             <div className="w-full max-w-container-max mx-auto grid grid-cols-1 lg:grid-cols-12 gap-gutter items-center h-full">
               <div className="lg:col-span-6 space-y-8 z-10 reveal-text" id="hero-content">
-                <span className="inline-block px-4 py-2 rounded-full bg-secondary-container text-on-secondary-container font-label-md uppercase tracking-wider text-sm shadow-sm backdrop-blur-sm bg-opacity-80">
+                <span className="inline-block px-4 py-2 rounded-full bg-secondary-container text-on-secondary-container font-label-md uppercase tracking-wider text-xs font-semibold shadow-sm backdrop-blur-sm bg-opacity-80">
                   {profile?.title || 'Obstetrician & Gynaecologist'} | {profile?.clinic_name || 'IVF & Fertility Care'}
                 </span>
-                <h1 className="font-display-lg text-on-surface text-5xl md:text-7xl lg:text-[80px] leading-[1.1]">
+                <h1 className="font-display-lg text-on-surface text-5xl md:text-7xl lg:text-[76px] leading-[1.08] tracking-tight">
                   Compassionate Care. <br/>
-                  <span className="text-primary italic">Advanced Fertility Solutions.</span> <br/>
+                  <span className="text-primary italic font-serif">Advanced Fertility Solutions.</span> <br/>
                   Healthier Futures.
                 </h1>
                 <p className="font-body-lg text-on-surface-variant max-w-2xl text-lg md:text-xl leading-relaxed">
@@ -189,7 +187,7 @@ export default function PublicWebsite() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 pt-4">
                   <div className="magnetic-wrap">
-                    <a className="inline-flex items-center justify-center px-8 py-4 bg-primary text-on-primary font-label-md rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 interactive-element magnetic-btn" href="#care-areas">
+                    <a className="inline-flex items-center justify-center px-8 py-4 bg-primary text-on-primary font-label-md rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 interactive-element magnetic-btn font-semibold text-sm" href="#care-areas">
                       Explore Care Areas
                       <span className="material-symbols-outlined ml-2 text-[20px]">arrow_forward</span>
                     </a>
@@ -201,110 +199,183 @@ export default function PublicWebsite() {
 
           {/* ABOUT SECTION */}
           <section className="py-section-gap px-margin bg-surface-container-low relative" id="about">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-secondary-fixed opacity-50 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-secondary-fixed opacity-40 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
             <div className="w-full max-w-container-max mx-auto grid grid-cols-1 lg:grid-cols-12 gap-stack-lg items-center">
               <div className="lg:col-span-5 lg:col-start-2 relative">
-                <div className="aspect-square rounded-3xl overflow-hidden shadow-md reveal-mask">
+                <div className="aspect-square rounded-3xl overflow-hidden shadow-xl reveal-mask border border-outline-variant/30">
                   <img className="w-full h-full object-cover" alt={profile?.name || 'Dr. Raveena Thalluru'} src={profile?.photo_url || about?.photo_url || 'assets/dr_raveena.jpeg'} />
                 </div>
-                <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-lg font-headline-md italic rotate-12 timeline-node">
-                  RT
+                {/* BRAND SIGNATURE SYMBOL EMBLEM */}
+                <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-primary text-on-primary rounded-full flex flex-col items-center justify-center shadow-xl brand-signature cursor-pointer timeline-node interactive-element">
+                  <span className="material-symbols-outlined text-2xl">stethoscope</span>
+                  <span className="text-[9px] font-label-md tracking-wider uppercase font-bold mt-0.5">Care</span>
                 </div>
               </div>
               <div className="lg:col-span-6 lg:pl-12 space-y-6 reveal-text">
+                <span className="font-label-md text-secondary uppercase tracking-widest text-xs font-semibold">About Doctor</span>
                 <h2 className="font-display-lg text-primary text-4xl md:text-5xl">{about?.heading || `Meet ${profile?.name || 'Dr. Raveena Thalluru'}`}</h2>
                 <div className="h-1 w-20 bg-secondary rounded-full"></div>
-                <p className="font-body-lg text-on-surface-variant leading-relaxed">
+                <p className="font-body-lg text-on-surface-variant leading-relaxed text-lg">
                   {about?.paragraph_1}
                 </p>
-                <p className="font-body-lg text-on-surface-variant leading-relaxed">
+                <p className="font-body-lg text-on-surface-variant leading-relaxed text-base">
                   {about?.paragraph_2}
                 </p>
               </div>
             </div>
           </section>
 
-          {/* AREAS OF CARE SECTION */}
-          <section className="py-section-gap px-margin bg-surface-container-low relative" id="care-areas">
+          {/* AREAS OF CARE SECTION — EDITORIAL INTERACTIVE LIST */}
+          <section className="py-section-gap px-margin bg-surface relative" id="care-areas">
             <div className="w-full max-w-container-max mx-auto">
-              <div className="text-center max-w-3xl mx-auto mb-16 space-y-4 reveal-text">
-                <span className="font-label-md text-secondary uppercase tracking-widest">Specialties</span>
-                <h2 className="font-display-lg text-on-surface text-4xl md:text-5xl">Areas of Care</h2>
-                <p className="font-body-md text-on-surface-variant text-lg">Comprehensive reproductive and fertility services tailored to your unique journey.</p>
+              <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6 reveal-text">
+                <div>
+                  <span className="font-label-md text-secondary uppercase tracking-widest text-xs font-semibold">Specialized Expertise</span>
+                  <h2 className="font-display-lg text-on-surface text-4xl md:text-5xl mt-2">Areas of Care</h2>
+                </div>
+                <p className="font-body-md text-on-surface-variant text-base max-w-md">
+                  Comprehensive reproductive & fertility services tailored thoughtfully to your unique path to parenthood.
+                </p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-                {careAreas.map((area) => (
-                  <div key={area.id} className="group bg-surface-container-lowest p-8 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden interactive-element interactive-list-item timeline-node">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -z-10 group-hover:scale-150 transition-transform duration-500"></div>
-                    <span className="material-symbols-outlined text-4xl text-primary mb-6 block">{area.icon || 'child_care'}</span>
-                    <h3 className="font-headline-sm text-on-surface mb-3 transition-transform duration-300">{area.title}</h3>
-                    <p className="font-body-md text-on-surface-variant">{area.short_description}</p>
+
+              {/* EDITORIAL INTERACTIVE LIST */}
+              <div className="space-y-3 care-editorial-container">
+                {careAreas.map((area, idx) => (
+                  <div
+                    key={area.id || idx}
+                    className="care-editorial-item py-6 px-6 md:px-8 rounded-2xl bg-surface-container-low/60 border-b border-outline-variant/30 flex flex-col md:flex-row md:items-center justify-between gap-6 interactive-element group cursor-pointer timeline-node"
+                    style={{ transitionDelay: `${idx * 70}ms` }}
+                  >
+                    <div className="flex items-start md:items-center gap-6 w-full">
+                      <span className="font-mono text-xl md:text-2xl font-bold text-primary/40 group-hover:text-primary transition-all duration-300 care-number">
+                        {String(idx + 1).padStart(2, '0')}
+                      </span>
+                      <div className="w-12 h-12 rounded-xl bg-primary-container/40 text-primary flex items-center justify-center flex-shrink-0 group-hover:bg-primary group-hover:text-on-primary transition-all duration-300 shadow-sm">
+                        <span className="material-symbols-outlined text-2xl">{area.icon || 'child_care'}</span>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-headline-sm text-on-surface text-xl md:text-2xl font-semibold transition-all duration-300 care-title">
+                          {area.title}
+                        </h3>
+                        <p className="font-body-md text-on-surface-variant text-sm md:text-base mt-1 max-w-3xl leading-relaxed">
+                          {area.short_description}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           </section>
 
-          {/* EDUCATION & PRACTICE SECTION */}
-          <section className="py-section-gap px-margin bg-surface-variant/30">
-            <div className="w-full max-w-container-max mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16">
-              <div className="space-y-8" id="education">
-                <div className="flex items-center gap-4 mb-8 reveal-text">
-                  <span className="material-symbols-outlined text-3xl text-primary">school</span>
-                  <h2 className="font-display-lg text-on-surface text-3xl md:text-4xl">Education</h2>
+          {/* EDUCATION & PRACTICE SECTION — JOURNEY & LAYERED DEPTH */}
+          <section className="py-section-gap px-margin bg-surface-container-low border-y border-outline-variant/30">
+            <div className="w-full max-w-container-max mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
+              
+              {/* EDUCATION JOURNEY TIMELINE */}
+              <div className="lg:col-span-6 space-y-8" id="education">
+                <div className="flex items-center gap-4 reveal-text">
+                  <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-sm">
+                    <span className="material-symbols-outlined text-2xl">school</span>
+                  </div>
+                  <div>
+                    <span className="font-label-md text-secondary uppercase tracking-widest text-xs font-semibold">Academic Foundation</span>
+                    <h2 className="font-display-lg text-on-surface text-3xl md:text-4xl font-bold">Education & Medical Training</h2>
+                  </div>
                 </div>
-                <div className="relative pl-8 space-y-12 before:content-[''] before:absolute before:left-3 before:top-2 before:bottom-2 before:w-px before:bg-outline-variant">
-                  {education.map((edu) => (
-                    <div key={edu.id} className="relative timeline-node">
-                      <div className="absolute -left-10 mt-1.5 w-4 h-4 rounded-full bg-primary shadow-[0_0_0_4px_rgba(181,10,83,0.2)]"></div>
-                      <h3 className="font-headline-sm text-on-surface">{edu.degree}</h3>
-                      <p className="font-body-md text-on-surface-variant mt-1">{edu.institution}</p>
+
+                <div className="relative pl-8 space-y-10 before:content-[''] before:absolute before:left-3.5 before:top-4 before:bottom-4 before:w-0.5 before:bg-gradient-to-b before:from-primary before:via-secondary before:to-primary/20">
+                  {education.map((edu, index) => (
+                    <div 
+                      key={edu.id || index} 
+                      className="relative timeline-node group"
+                      style={{ transitionDelay: `${index * 120}ms` }}
+                    >
+                      <div className="absolute -left-8 top-4 w-4 h-4 rounded-full bg-primary ring-4 ring-primary/20 group-hover:ring-primary/50 group-hover:scale-125 transition-all duration-300 shadow-md" />
+                      <div className="p-6 rounded-2xl bg-surface border border-outline-variant/30 shadow-sm hover:shadow-md transition-all duration-300 space-y-2">
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="inline-block px-3 py-1 rounded-full bg-primary-container/60 text-primary text-xs font-bold font-label-md uppercase tracking-wider">
+                            {edu.degree}
+                          </span>
+                          <span className="text-xs text-on-surface-variant font-mono uppercase tracking-wider font-medium">
+                            {index === 0 ? 'Medical Foundation' : 'Specialization'}
+                          </span>
+                        </div>
+                        <h3 className="font-headline-sm text-on-surface text-xl font-bold">{edu.degree}</h3>
+                        <p className="font-body-md text-on-surface-variant text-sm flex items-center gap-2">
+                          <span className="material-symbols-outlined text-base text-primary">account_balance</span>
+                          <span>{edu.institution}</span>
+                        </p>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="space-y-8 reveal-text" id="practice">
-                <div className="flex items-center gap-4 mb-8">
-                  <span className="material-symbols-outlined text-3xl text-primary">local_hospital</span>
-                  <h2 className="font-display-lg text-on-surface text-3xl md:text-4xl">Current Practice</h2>
+
+              {/* CURRENT PRACTICE LAYERED COMPOSITION */}
+              <div className="lg:col-span-6 space-y-8 reveal-text" id="practice">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-secondary-container/60 text-secondary flex items-center justify-center shadow-sm">
+                    <span className="material-symbols-outlined text-2xl">local_hospital</span>
+                  </div>
+                  <div>
+                    <span className="font-label-md text-secondary uppercase tracking-widest text-xs font-semibold">Clinical Presence</span>
+                    <h2 className="font-display-lg text-on-surface text-3xl md:text-4xl font-bold">Current Practice</h2>
+                  </div>
                 </div>
-                <div className="bg-surface p-8 rounded-3xl shadow-sm">
-                  <h3 className="font-headline-md text-primary mb-2">{practice?.clinic_name || 'LIVF Fertility'}</h3>
-                  <p className="font-body-md text-on-surface-variant mb-6 italic">{practice?.tagline}</p>
-                  <div className="space-y-4">
+
+                <div className="bg-surface p-8 rounded-3xl border border-outline-variant/40 shadow-lg relative overflow-hidden layered-card timeline-node">
+                  <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
+                  <span className="inline-block px-3.5 py-1.5 rounded-full bg-primary text-on-primary font-label-md text-xs font-bold uppercase tracking-wider mb-4 shadow-sm">
+                    Active Clinical Center
+                  </span>
+                  <h3 className="font-display-lg text-primary text-3xl font-bold mb-2">{practice?.clinic_name || 'LIVF Fertility'}</h3>
+                  <p className="font-body-md text-on-surface-variant mb-6 text-sm italic">{practice?.tagline}</p>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                     {practice?.locations?.map((loc, idx) => (
-                      <div key={idx} className="flex items-start gap-3">
-                        <span className="material-symbols-outlined text-secondary mt-0.5">location_on</span>
-                        <div>
-                          <p className="font-label-md text-on-surface">{loc.name}</p>
-                          <p className="font-body-sm text-on-surface-variant">{loc.city}</p>
+                      <div key={idx} className="p-4 rounded-2xl bg-surface-container-low border border-outline-variant/30 space-y-1 hover:border-primary/40 hover:bg-surface transition-all duration-300 shadow-sm hover:shadow-md">
+                        <div className="flex items-center gap-1.5 text-primary text-xs font-bold uppercase tracking-wider">
+                          <span className="material-symbols-outlined text-sm">location_on</span>
+                          <span>{loc.name || 'Chennai Center'}</span>
                         </div>
+                        <p className="font-body-sm text-on-surface text-sm font-semibold">{loc.city || 'Chennai'}</p>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
+
             </div>
           </section>
 
-          {/* PATIENT APPROACH SECTION */}
-          <section className="py-section-gap px-margin bg-primary text-on-primary reveal-text relative overflow-hidden" id="approach">
-            <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
-              <div className="w-[800px] h-[800px] rounded-full border-[1px] border-on-primary animate-[pulse_10s_ease-in-out_infinite]"></div>
-              <div className="absolute w-[600px] h-[600px] rounded-full border-[1px] border-on-primary animate-[pulse_8s_ease-in-out_infinite_1s]"></div>
-              <div className="absolute w-[400px] h-[400px] rounded-full border-[1px] border-on-primary animate-[pulse_6s_ease-in-out_infinite_2s]"></div>
+          {/* PATIENT APPROACH SECTION — HUMAN 4 PILLARS */}
+          <section className="py-section-gap px-margin bg-primary text-on-primary reveal-text relative overflow-hidden isolate" id="approach">
+            <div className="absolute inset-0 flex items-center justify-center opacity-15 pointer-events-none overflow-hidden">
+              <div className="w-[min(90vw,700px)] aspect-square rounded-full border border-on-primary animate-[pulse_10s_ease-in-out_infinite] flex-shrink-0" />
+              <div className="absolute w-[min(65vw,500px)] aspect-square rounded-full border border-on-primary animate-[pulse_8s_ease-in-out_infinite_1.5s] flex-shrink-0" />
+              <div className="absolute w-[min(40vw,300px)] aspect-square rounded-full border border-on-primary animate-[pulse_6s_ease-in-out_infinite_3s] flex-shrink-0" />
             </div>
+            
             <div className="w-full max-w-container-max mx-auto relative z-10">
               <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-                <h2 className="font-display-lg text-4xl md:text-5xl">Patient Approach</h2>
-                <p className="font-body-md text-primary-fixed-dim text-lg">Four pillars of care guiding every patient interaction.</p>
+                <span className="font-label-md text-on-primary-container uppercase tracking-widest text-xs font-semibold opacity-90">Philosophy of Care</span>
+                <h2 className="font-display-lg text-4xl md:text-5xl font-bold">Patient Approach</h2>
+                <p className="font-body-md text-primary-fixed-dim text-lg">Four guiding pillars ensuring confidential, empathetic, and personalized clinical care.</p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                {patientApproach.map((item) => (
-                  <div key={item.id} className="bg-on-primary-fixed/20 p-8 rounded-2xl backdrop-blur-sm hover:bg-on-primary-fixed/30 transition-colors timeline-node">
-                    <div className="text-3xl font-display-lg text-primary-fixed-dim mb-4 opacity-50">{item.step_number}</div>
-                    <h3 className="font-headline-sm mb-3">{item.title}</h3>
-                    <p className="font-body-sm text-primary-fixed-dim">{item.description}</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {patientApproach.map((item, idx) => (
+                  <div 
+                    key={item.id || idx} 
+                    className="bg-on-primary-fixed/15 p-8 rounded-3xl border border-on-primary/10 backdrop-blur-md hover:bg-on-primary-fixed/25 hover:border-on-primary/30 transition-all duration-300 timeline-node space-y-4 shadow-lg hover:-translate-y-1"
+                    style={{ transitionDelay: `${idx * 100}ms` }}
+                  >
+                    <div className="text-2xl font-mono font-bold text-primary-fixed-dim opacity-70">
+                      0{item.step_number || idx + 1}
+                    </div>
+                    <h3 className="font-headline-sm text-xl font-bold text-on-primary">{item.title}</h3>
+                    <p className="font-body-sm text-primary-fixed-dim text-sm leading-relaxed">{item.description}</p>
                   </div>
                 ))}
               </div>
@@ -318,32 +389,38 @@ export default function PublicWebsite() {
                 <h2 className="font-display-lg text-primary text-4xl md:text-5xl">{contact?.heading || 'Begin Your Journey'}</h2>
                 <p className="font-body-lg text-on-surface-variant">{contact?.subheading}</p>
                 <div className="space-y-6">
-                  <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors interactive-element">
+                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-colors interactive-element border border-outline-variant/30">
                     <div className="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center flex-shrink-0">
                       <span className="material-symbols-outlined text-on-secondary-container">call</span>
                     </div>
                     <div>
-                      <p className="font-label-md text-on-surface-variant mb-1">Direct Lines</p>
+                      <p className="font-label-md text-on-surface-variant mb-1 text-xs uppercase font-semibold">Direct Lines</p>
                       {contact?.phone_numbers?.map((num, idx) => (
-                        <a key={idx} className="block font-headline-sm text-on-surface hover:text-primary transition-colors" href={`tel:${num}`}>
+                        <a key={idx} className="block font-headline-sm text-on-surface hover:text-primary transition-colors text-base font-bold" href={`tel:${num}`}>
                           {num}
                         </a>
                       ))}
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors interactive-element">
+                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-colors interactive-element border border-outline-variant/30">
                     <div className="w-12 h-12 rounded-full bg-tertiary-container flex items-center justify-center flex-shrink-0">
                       <span className="material-symbols-outlined text-on-tertiary-container">map</span>
                     </div>
                     <div>
-                      <p className="font-label-md text-on-surface-variant mb-1">Clinic Locations</p>
-                      <p className="font-headline-sm text-on-surface text-lg">{contact?.locations?.join(' & ')}</p>
-                      <p className="font-body-sm text-on-surface-variant">{contact?.city}</p>
+                      <p className="font-label-md text-on-surface-variant mb-1 text-xs uppercase font-semibold">Clinic Locations</p>
+                      <p className="font-headline-sm text-on-surface text-base font-bold">
+                        {Array.isArray(contact?.locations) 
+                          ? contact.locations.filter(l => typeof l === 'string' && !l.includes('http')).join(' & ') || 'Perungudi & T. Nagar'
+                          : 'Perungudi & T. Nagar'}
+                      </p>
+                      <p className="font-body-sm text-on-surface-variant text-xs">
+                        {(contact?.city && !contact.city.includes('http')) ? contact.city : 'Chennai, Tamil Nadu'}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="lg:col-span-7 z-10 h-96 w-full rounded-3xl overflow-hidden shadow-lg relative reveal-mask border border-outline-variant/30 group">
+              <div className="lg:col-span-7 z-10 h-96 w-full rounded-3xl overflow-hidden shadow-xl relative reveal-mask border border-outline-variant/30 group">
                 {(() => {
                   let rawMapUrl = contact?.map_link || '';
                   if (rawMapUrl.includes('<iframe')) {
@@ -445,13 +522,27 @@ export default function PublicWebsite() {
               <p className="font-semibold text-on-surface">{practice?.clinic_name || 'LIVF Fertility'}</p>
               <p className="flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-xs text-primary">location_on</span>
-                <span>{contact?.address_display || 'Level 4, Specialist Medical Centre'}, {contact?.city || 'Chennai'}</span>
+                <span>
+                  {(contact?.address_display && !contact.address_display.includes('http')) ? contact.address_display : 'Level 4, Specialist Medical Centre'}, {(contact?.city && !contact.city.includes('http')) ? contact.city : 'Chennai'}
+                </span>
               </p>
             </div>
           </div>
         </div>
-        <div className="mt-8 pt-6 border-t border-outline-variant/30 text-center font-label-md text-xs text-on-surface-variant opacity-70">
-          © {new Date().getFullYear()} {profile?.name || 'Dr. Raveena Thalluru'}. All rights reserved.
+
+        {/* FOOTER BOTTOM BAR WITH SUBTLE DISCREET ADMIN UTILITY LINK */}
+        <div className="mt-8 pt-6 border-t border-outline-variant/30 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-container-max mx-auto px-margin font-label-md text-xs text-on-surface-variant opacity-80">
+          <div>
+            © {new Date().getFullYear()} {profile?.name || 'Dr. Raveena Thalluru'}. All rights reserved.
+          </div>
+          <div>
+            <a
+              href="/admin/login"
+              className="hover:text-primary transition-colors text-on-surface-variant/70 hover:underline decoration-primary/40 underline-offset-4"
+            >
+              Admin Login
+            </a>
+          </div>
         </div>
       </footer>
     </div>

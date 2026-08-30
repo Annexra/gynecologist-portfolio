@@ -12,6 +12,44 @@ function InteractiveMapModal({ initialQuery, contact, onConfirm, onClose }) {
   const [selectedAddress, setSelectedAddress] = React.useState(initialQuery || '');
   const [loading, setLoading] = React.useState(false);
   const [searching, setSearching] = React.useState(false);
+  const [searchError, setSearchError] = React.useState(null);
+  const [locationVerified, setLocationVerified] = React.useState(Boolean(initialQuery));
+
+  // Autocomplete Suggestions State
+  const [suggestions, setSuggestions] = React.useState([]);
+  const [showSuggestions, setShowSuggestions] = React.useState(false);
+  const [searchLoading, setSearchLoading] = React.useState(false);
+  const searchTimeoutRef = React.useRef(null);
+
+  // Helper to sanitize incoming query or URL into clean place text
+  const sanitizeQueryText = (text) => {
+    if (!text || typeof text !== 'string') return '';
+    let q = text.trim();
+    if (q.includes('<iframe')) {
+      const m = q.match(/src=["']([^"']+)["']/);
+      if (m && m[1]) q = m[1];
+    }
+    if (q.includes('http://') || q.includes('https://')) {
+      try {
+        const u = new URL(q);
+        const qP = u.searchParams.get('q') || u.searchParams.get('query');
+        if (qP && !qP.includes('http')) return decodeURIComponent(qP);
+        if (u.pathname.includes('/place/')) {
+          const pm = u.pathname.match(/\/place\/([^/]+)/);
+          if (pm && pm[1]) return decodeURIComponent(pm[1].replace(/\+/g, ' ')).replace(/@.*$/, '');
+        }
+      } catch (e) {
+        const qm = q.match(/[?&](?:q|query)=([^&]+)/);
+        if (qm && qm[1] && !qm[1].includes('http')) {
+          try { return decodeURIComponent(qm[1]); } catch (e2) { return qm[1]; }
+        }
+      }
+    }
+    // Clean out raw coordinate parameters like 963m/data=!3m2...
+    q = q.replace(/\/data=!.*$/i, '').replace(/@[\d.,]+z?/i, '').trim();
+    if (q.includes('http://') || q.includes('https://')) return '';
+    return q;
+  };
 
   React.useEffect(() => {
     let isMounted = true;
@@ -78,8 +116,9 @@ function InteractiveMapModal({ initialQuery, contact, onConfirm, onClose }) {
           await reverseGeocode(lat, lng);
         });
 
-        if (initialQuery) {
-          geocodeSearch(initialQuery, map, marker);
+        const cleanInitial = sanitizeQueryText(initialQuery);
+        if (cleanInitial) {
+          geocodeSearch(cleanInitial, map, marker);
         }
       }
     };
@@ -95,8 +134,63 @@ function InteractiveMapModal({ initialQuery, contact, onConfirm, onClose }) {
     };
   }, []);
 
+  // Fetch Live Autocomplete Suggestions as user types
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+    setLocationVerified(false);
+    if (searchError) setSearchError(null);
+
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    const cleanVal = sanitizeQueryText(val);
+    if (!cleanVal || cleanVal.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    setSearchLoading(true);
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleanVal)}&limit=5&addressdetails=1`);
+        const data = await res.json();
+        if (data && Array.isArray(data) && data.length > 0) {
+          setSuggestions(data);
+          setShowSuggestions(true);
+        } else {
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
+      } catch (err) {
+        console.error('Autocomplete fetch error:', err);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+  };
+
+  const handleSelectSuggestion = (placeItem) => {
+    const lat = parseFloat(placeItem.lat);
+    const lng = parseFloat(placeItem.lon);
+    const addressText = placeItem.display_name;
+
+    setSelectedCoords({ lat, lng });
+    setSelectedAddress(addressText);
+    setSearchQuery(addressText);
+    setLocationVerified(true);
+    setSearchError(null);
+    setShowSuggestions(false);
+
+    if (mapInstanceRef.current && markerRef.current) {
+      mapInstanceRef.current.setView([lat, lng], 16);
+      markerRef.current.setLatLng([lat, lng]);
+    }
+  };
+
   const reverseGeocode = async (lat, lng) => {
     setLoading(true);
+    setSearchError(null);
     try {
       const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
       const data = await res.json();
@@ -104,24 +198,35 @@ function InteractiveMapModal({ initialQuery, contact, onConfirm, onClose }) {
         const addressText = data.display_name;
         setSelectedAddress(addressText);
         setSearchQuery(addressText);
+        setLocationVerified(true);
+      } else {
+        setLocationVerified(false);
+        setSearchError('Could not find address details for this map point. Please select a valid location.');
       }
     } catch (err) {
       console.error('Reverse geocode error:', err);
+      setSearchError('Failed to fetch address. Please check your connection.');
     } finally {
       setLoading(false);
     }
   };
 
   const geocodeSearch = async (queryText, targetMap, targetMarker) => {
-    if (!queryText || !queryText.trim()) return;
+    const cleanQuery = sanitizeQueryText(queryText);
+    if (!cleanQuery) {
+      setSearchError('Please enter a location name, address, or landmark to search.');
+      return;
+    }
     setSearching(true);
+    setSearchError(null);
+    setShowSuggestions(false);
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryText)}&limit=1`);
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleanQuery)}&limit=5&addressdetails=1`);
       const data = await res.json();
       if (data && data.length > 0) {
         const lat = parseFloat(data[0].lat);
         const lng = parseFloat(data[0].lon);
-        const addressText = data[0].display_name || queryText;
+        const addressText = data[0].display_name || cleanQuery;
 
         const map = targetMap || mapInstanceRef.current;
         const marker = targetMarker || markerRef.current;
@@ -129,87 +234,151 @@ function InteractiveMapModal({ initialQuery, contact, onConfirm, onClose }) {
         setSelectedCoords({ lat, lng });
         setSelectedAddress(addressText);
         setSearchQuery(addressText);
+        setLocationVerified(true);
+        setSearchError(null);
 
         if (map && marker) {
           map.setView([lat, lng], 15);
           marker.setLatLng([lat, lng]);
         }
+      } else {
+        setLocationVerified(false);
+        setSearchError(`No real location match found for "${cleanQuery}". Please enter a valid area, street, hospital, or city name.`);
       }
     } catch (err) {
       console.error('Geocode search error:', err);
+      setSearchError('Geocoding search service unavailable. Please try again.');
     } finally {
       setSearching(false);
     }
   };
 
   const handleConfirm = () => {
-    const finalLocation = selectedAddress || searchQuery || initialQuery;
-    onConfirm(finalLocation);
+    if (!locationVerified || !selectedAddress) {
+      setSearchError('Invalid location! Please search for a valid real place or click a point on the map first.');
+      return;
+    }
+    onConfirm(selectedAddress);
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl border border-outline-variant/40 flex flex-col max-h-[90vh]">
-        <div className="p-5 bg-surface-container-low border-b border-outline-variant/30 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-5 overflow-y-auto">
+      <div className="bg-surface w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl border border-outline-variant/40 flex flex-col max-h-[95vh] my-auto">
+        {/* Modal Header */}
+        <div className="p-3.5 sm:p-5 bg-surface-container-low border-b border-outline-variant/30 flex items-center justify-between shrink-0">
           <div>
-            <h3 className="font-display-lg text-primary text-xl font-bold flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary">location_on</span>
+            <h3 className="font-display-lg text-primary text-base sm:text-xl font-bold flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-lg sm:text-xl">location_on</span>
               <span>Interactive Map Location Picker</span>
             </h3>
-            <p className="text-xs text-on-surface-variant mt-0.5">Click anywhere on the map or drag the pin marker to select clinic location.</p>
+            <p className="text-[11px] sm:text-xs text-on-surface-variant mt-0.5">Click on the map or drag the pin marker to select clinic location.</p>
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors"
           >
-            <span className="material-symbols-outlined text-lg">close</span>
+            <span className="material-symbols-outlined text-base sm:text-lg">close</span>
           </button>
         </div>
 
-        <div className="p-4 bg-surface border-b border-outline-variant/30 flex items-center gap-3">
-          <div className="relative flex-1">
-            <span className="material-symbols-outlined absolute left-3 top-2.5 text-on-surface-variant text-lg">search</span>
-            <input
-              type="text"
-              placeholder="Search clinic name, hospital, street, or area (e.g. Apollo Hospital Greams Road, Chennai)"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  geocodeSearch(searchQuery);
-                }
-              }}
-              className="w-full pl-10 pr-4 py-2 rounded-xl bg-surface-container-low border border-outline-variant text-sm text-on-surface focus:outline-none focus:border-primary"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => geocodeSearch(searchQuery)}
-            disabled={searching}
-            className="px-4 py-2 bg-primary text-on-primary rounded-xl font-label-md text-xs font-semibold hover:opacity-95 transition-all shadow-sm flex items-center gap-1.5"
-          >
-            <span className="material-symbols-outlined text-sm">{searching ? 'sync' : 'search'}</span>
-            <span>{searching ? 'Searching...' : 'Search Location'}</span>
-          </button>
-        </div>
-
-        <div className="flex-1 min-h-[400px] relative bg-surface-container-low">
-          <div ref={mapRef} className="w-full h-full min-h-[400px] z-10" />
-          {loading && (
-            <div className="absolute top-4 right-4 z-20 bg-surface/90 px-3 py-1.5 rounded-xl shadow-md border border-outline-variant text-xs text-primary font-semibold flex items-center gap-2">
-              <span className="material-symbols-outlined animate-spin text-sm">sync</span>
-              <span>Fetching address...</span>
+        {/* Modal Body Container */}
+        <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
+          {/* Big Responsive Search Bar Area with Autocomplete */}
+          <div className="p-3.5 sm:p-4 bg-surface border-b border-outline-variant/30 space-y-2.5 shrink-0 relative z-40">
+            <div className="flex flex-col sm:flex-row items-stretch gap-2 relative">
+              <div className="relative flex-1">
+                <span className="material-symbols-outlined absolute left-3 top-3 text-on-surface-variant text-lg">search</span>
+                <input
+                  type="text"
+                  placeholder="Search location, clinic, hospital or street (e.g. Apollo Hospital, Chennai)"
+                  value={searchQuery}
+                  onChange={handleInputChange}
+                  onFocus={() => {
+                    if (suggestions.length > 0) setShowSuggestions(true);
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      geocodeSearch(searchQuery);
+                    }
+                  }}
+                  className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant text-xs sm:text-sm font-medium text-on-surface focus:outline-none focus:border-primary shadow-inner"
+                />
+                {searchLoading && (
+                  <span className="material-symbols-outlined animate-spin absolute right-3 top-3 text-primary text-base">sync</span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => geocodeSearch(searchQuery)}
+                disabled={searching}
+                className="w-full sm:w-auto px-4 py-2.5 bg-primary text-on-primary rounded-xl font-label-md text-xs font-bold hover:opacity-95 transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0"
+              >
+                <span className="material-symbols-outlined text-base">{searching ? 'sync' : 'search'}</span>
+                <span>{searching ? 'Searching...' : 'Search Location'}</span>
+              </button>
             </div>
-          )}
+
+            {/* Google Maps Style Location Autocomplete Suggestions List */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute left-3.5 right-3.5 top-full z-50 mt-1 bg-surface border border-outline-variant/60 rounded-2xl shadow-2xl overflow-hidden divide-y divide-outline-variant/30 max-h-64 overflow-y-auto animate-in fade-in duration-150">
+                {suggestions.map((item, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => handleSelectSuggestion(item)}
+                    className="p-3 hover:bg-surface-container-high cursor-pointer flex items-start gap-3 transition-colors interactive-element"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="material-symbols-outlined text-primary text-base">location_on</span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-on-surface truncate">
+                        {item.address?.hospital || item.address?.clinic || item.address?.amenity || item.address?.road || item.display_name.split(',')[0]}
+                      </p>
+                      <p className="text-[11px] text-on-surface-variant truncate">{item.display_name}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Validation & Search Feedback Notice (Prevents Overflow with break-all) */}
+            {searchError && (
+              <div className="p-2.5 bg-error-container/90 text-on-error-container rounded-xl text-xs flex items-start gap-2 shadow-sm animate-in fade-in duration-200 min-w-0 max-w-full overflow-hidden break-all break-words">
+                <span className="material-symbols-outlined text-base shrink-0 mt-0.5">error</span>
+                <span className="font-semibold break-all break-words min-w-0">{searchError}</span>
+              </div>
+            )}
+
+            {locationVerified && !searchError && (
+              <div className="flex items-center gap-1.5 text-xs text-primary font-semibold">
+                <span className="material-symbols-outlined text-base text-primary">verified</span>
+                <span>Real Location Verified</span>
+              </div>
+            )}
+          </div>
+
+          {/* Map Container */}
+          <div className="h-64 sm:h-96 min-h-[220px] sm:min-h-[350px] relative bg-surface-container-low shrink-0 overflow-hidden">
+            <div ref={mapRef} className="w-full h-full z-10" />
+            {loading && (
+              <div className="absolute top-3 right-3 z-20 bg-surface/95 px-3 py-1.5 rounded-xl shadow-md border border-outline-variant text-xs text-primary font-semibold flex items-center gap-2 backdrop-blur-sm">
+                <span className="material-symbols-outlined animate-spin text-sm">sync</span>
+                <span>Fetching location details...</span>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="p-5 bg-surface border-t border-outline-variant/30 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-xs text-on-surface-variant max-w-lg">
-            <span className="font-semibold text-on-surface block">Active Location Selected:</span>
-            <span className="text-primary font-medium text-xs line-clamp-2">{selectedAddress || searchQuery || 'Click map to select location'}</span>
+        {/* Modal Footer (Prevents text overflow with break-all / truncate) */}
+        <div className="p-3.5 sm:p-4 bg-surface border-t border-outline-variant/30 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 z-20 min-w-0 max-w-full overflow-hidden">
+          <div className="text-xs text-on-surface-variant max-w-lg w-full min-w-0 overflow-hidden">
+            <span className="font-semibold text-on-surface block text-[11px] sm:text-xs">Active Location Selected:</span>
+            <span className="text-primary font-medium text-xs truncate block mt-0.5 break-all">
+              {selectedAddress || searchQuery || 'Click map pin to pick location'}
+            </span>
           </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
             <button
               type="button"
               onClick={() => {
@@ -218,18 +387,18 @@ function InteractiveMapModal({ initialQuery, contact, onConfirm, onClose }) {
                   window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(active)}`, '_blank');
                 }
               }}
-              className="px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl font-label-md text-xs hover:bg-surface-container-highest transition-colors flex items-center gap-1.5"
+              className="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-surface-container-high text-on-surface font-label-md text-xs hover:bg-surface-container-highest transition-colors flex items-center justify-center gap-1.5 font-medium"
             >
               <span className="material-symbols-outlined text-sm">open_in_new</span>
-              <span>Open Google Maps</span>
+              <span>Open in Maps</span>
             </button>
             <button
               type="button"
               onClick={handleConfirm}
-              className="px-5 py-2.5 bg-primary text-on-primary rounded-xl font-label-md text-xs shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 font-bold"
+              className="w-full sm:w-auto px-5 py-2.5 bg-primary text-on-primary rounded-xl font-label-md text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1.5 font-bold"
             >
               <span className="material-symbols-outlined text-sm">check</span>
-              <span>Confirm & Use This Location</span>
+              <span>Confirm Location</span>
             </button>
           </div>
         </div>
@@ -241,6 +410,7 @@ function InteractiveMapModal({ initialQuery, contact, onConfirm, onClose }) {
 export default function AdminDashboard({ onLogout }) {
   const { logout, user } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // CMS State
   const [profile, setProfile] = useState({});
@@ -262,6 +432,17 @@ export default function AdminDashboard({ onLogout }) {
   const [approachModal, setApproachModal] = useState({ open: false, data: null });
   const [mapPickerModal, setMapPickerModal] = useState(false);
   const [mapSearchQuery, setMapSearchQuery] = useState('');
+
+  const navTabs = [
+    { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+    { id: 'profile', label: 'Doctor Profile', icon: 'person' },
+    { id: 'about', label: 'About Section', icon: 'info' },
+    { id: 'care', label: 'Areas of Care', icon: 'child_care' },
+    { id: 'education', label: 'Education & Training', icon: 'school' },
+    { id: 'practice', label: 'Current Practice', icon: 'local_hospital' },
+    { id: 'approach', label: 'Patient Approach', icon: 'favorite' },
+    { id: 'contact', label: 'Contact Details', icon: 'call' },
+  ];
 
   useEffect(() => {
     loadAllData();
@@ -456,27 +637,99 @@ export default function AdminDashboard({ onLogout }) {
   };
 
   return (
-    <div className="min-h-screen bg-surface-container-low flex flex-col md:flex-row">
-      {/* Sidebar Navigation */}
-      <aside className="w-full md:w-64 bg-surface border-r border-outline-variant/30 flex-shrink-0">
+    <div className="min-h-screen bg-surface-container-low flex flex-col md:flex-row relative">
+      {/* Mobile Top Floating Menu Button (Always visible at any scroll / Y position) */}
+      <div className="md:hidden fixed top-4 right-4 z-50">
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="w-12 h-12 rounded-2xl bg-primary text-on-primary shadow-2xl flex items-center justify-center active:scale-95 hover:scale-105 transition-all border border-white/20"
+          aria-label="Toggle Navigation Menu"
+        >
+          <span className="material-symbols-outlined text-2xl">{mobileMenuOpen ? 'close' : 'menu'}</span>
+        </button>
+      </div>
+
+      {/* Mobile Header Bar */}
+      <header className="md:hidden sticky top-0 z-30 bg-surface/95 backdrop-blur-md border-b border-outline-variant/30 px-5 py-3.5 flex items-center justify-between shadow-xs">
+        <div>
+          <h2 className="font-display-lg text-primary text-lg font-bold">Dr. Raveena CMS</h2>
+          <p className="font-body-sm text-on-surface-variant text-[11px]">Admin Control Center</p>
+        </div>
+      </header>
+
+      {/* Mobile Menu Overlay Backdrop */}
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-40 animate-in fade-in duration-200"
+        />
+      )}
+
+      {/* Mobile Floating Navigation Drawer Card */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-x-4 top-20 z-50 bg-surface border border-outline-variant/40 rounded-3xl p-5 shadow-2xl space-y-4 max-h-[80vh] overflow-y-auto animate-in fade-in slide-in-from-top-4 duration-200">
+          <div className="flex items-center justify-between pb-2 border-b border-outline-variant/30">
+            <span className="font-headline-sm text-xs font-bold uppercase tracking-wider text-on-surface-variant">Navigation Menu</span>
+            <span className="text-xs text-primary font-semibold">Select Tab</span>
+          </div>
+
+          <nav className="space-y-1">
+            {navTabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-label-md text-sm transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-primary text-on-primary font-semibold shadow-md'
+                    : 'text-on-surface-variant hover:bg-surface-container-high'
+                }`}
+              >
+                <span className="material-symbols-outlined text-lg">{tab.icon}</span>
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </nav>
+
+          <div className="pt-3 border-t border-outline-variant/30 space-y-2">
+            <a
+              href="/"
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-outline-variant text-on-surface-variant text-xs hover:bg-surface-container-high transition-colors font-medium"
+            >
+              <span className="material-symbols-outlined text-sm">open_in_new</span>
+              <span>View Public Site</span>
+            </a>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                if (onLogout) onLogout();
+                else logout();
+              }}
+              className="w-full flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-error-container text-on-error-container text-xs hover:opacity-90 transition-opacity font-semibold"
+            >
+              <span className="material-symbols-outlined text-sm">logout</span>
+              <span>Sign Out</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Desktop Sidebar Navigation */}
+      <aside className="hidden md:flex md:w-64 bg-surface border-r border-outline-variant/30 flex-col flex-shrink-0 min-h-screen">
         <div className="p-6 border-b border-outline-variant/30 flex items-center justify-between">
           <div>
-            <h2 className="font-display-lg text-primary text-xl">Dr. Raveena CMS</h2>
+            <h2 className="font-display-lg text-primary text-xl font-bold">Dr. Raveena CMS</h2>
             <p className="font-body-sm text-on-surface-variant text-xs">Admin Control Center</p>
           </div>
         </div>
 
-        <nav className="p-4 space-y-1">
-          {[
-            { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
-            { id: 'profile', label: 'Doctor Profile', icon: 'person' },
-            { id: 'about', label: 'About Section', icon: 'info' },
-            { id: 'care', label: 'Areas of Care', icon: 'child_care' },
-            { id: 'education', label: 'Education & Training', icon: 'school' },
-            { id: 'practice', label: 'Current Practice', icon: 'local_hospital' },
-            { id: 'approach', label: 'Patient Approach', icon: 'favorite' },
-            { id: 'contact', label: 'Contact Details', icon: 'call' },
-          ].map(tab => (
+        <nav className="p-4 space-y-1 flex-1">
+          {navTabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -504,7 +757,7 @@ export default function AdminDashboard({ onLogout }) {
           </a>
           <button
             onClick={onLogout || logout}
-            className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl bg-error-container text-on-error-container text-xs hover:opacity-90 transition-opacity"
+            className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl bg-error-container text-on-error-container text-xs hover:opacity-90 transition-opacity font-semibold"
           >
             <span className="material-symbols-outlined text-sm">logout</span>
             <span>Sign Out</span>
