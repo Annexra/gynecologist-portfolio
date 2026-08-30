@@ -21,7 +21,7 @@ header.scrolled {
   backdrop-filter: blur(10px);
 }
 
-/* Custom Cursor for Public Site */
+/* Custom Cursor for Public Site with High-Contrast Dual Support */
 @media (pointer: fine) and (min-width: 768px) {
   body.public-site,
   body.public-site a,
@@ -35,21 +35,38 @@ header.scrolled {
   #cursor-dot {
     position: fixed; top: 0; left: 0; width: 8px; height: 8px;
     background-color: #b50a53; border-radius: 50%;
+    box-shadow: 0 0 0 1.5px rgba(255, 248, 247, 0.9), 0 2px 8px rgba(0, 0, 0, 0.18);
     pointer-events: none; z-index: 9999;
     transform: translate(-50%, -50%);
-    transition: transform 0.08s ease-out;
+    transition: transform 0.08s ease-out, background-color 0.25s, box-shadow 0.25s;
   }
   #cursor-follower {
     position: fixed; top: 0; left: 0; width: 40px; height: 40px;
-    border: 1px solid rgba(181, 10, 83, 0.5); border-radius: 50%;
+    border: 1.5px solid rgba(181, 10, 83, 0.65);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 0 12px rgba(181, 10, 83, 0.2);
+    border-radius: 50%;
     pointer-events: none; z-index: 9998;
     transform: translate(-50%, -50%);
-    transition: transform 0.25s cubic-bezier(0.19, 1, 0.22, 1), width 0.3s, height 0.3s, background-color 0.3s;
+    transition: transform 0.25s cubic-bezier(0.19, 1, 0.22, 1), width 0.3s, height 0.3s, background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
   }
   .cursor-hover #cursor-follower {
-    width: 60px; height: 60px;
-    background-color: rgba(181, 10, 83, 0.12);
-    border-color: rgba(181, 10, 83, 0.8);
+    width: 58px; height: 58px;
+    background-color: rgba(181, 10, 83, 0.14);
+    border-color: rgba(181, 10, 83, 0.85);
+  }
+
+  /* Dark Section High-Contrast State (For Patient Approach & Dark Cards) */
+  body.cursor-on-dark #cursor-dot {
+    background-color: #fff8f7 !important;
+    box-shadow: 0 0 0 1.5px rgba(181, 10, 83, 0.6), 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  }
+  body.cursor-on-dark #cursor-follower {
+    border-color: rgba(255, 248, 247, 0.9) !important;
+    box-shadow: inset 0 0 0 1px rgba(181, 10, 83, 0.4), 0 0 12px rgba(255, 255, 255, 0.3) !important;
+  }
+  body.cursor-on-dark .cursor-hover #cursor-follower {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    border-color: #ffffff !important;
   }
 }
 

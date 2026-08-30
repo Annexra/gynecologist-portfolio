@@ -110,7 +110,7 @@ export default function WomensHealthLab() {
         const center = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
-        const scale = (activeExpId === 'pelvis' ? 6.5 : activeExpId === 'pregnancy' ? 6.0 : 5.5) / maxDim;
+        const scale = (activeExpId === 'pelvis' ? 6.5 : activeExpId === 'fetus' ? 6.0 : 5.5) / maxDim;
 
         loadedModel.position.x = -center.x * scale;
         loadedModel.position.y = -center.y * scale;
@@ -369,8 +369,8 @@ export default function WomensHealthLab() {
               Explore. Understand. <span className="text-primary italic font-serif">Discover.</span>
             </h2>
             <p className="font-body-md text-on-surface-variant text-base md:text-lg max-w-2xl leading-relaxed pt-1">
-              {currentExp.id === 'pregnancy'
-                ? 'Explore how fetal position and orientation relate to maternal pelvic anatomy.'
+              {currentExp.id === 'fetus'
+                ? 'Explore the orientation and position of the fetus through an interactive 3D model.'
                 : 'Explore the anatomical structures behind women’s reproductive health, fertility, and wellness through an interactive, patient-friendly 3D visualization experience.'}
             </p>
           </div>
@@ -423,7 +423,7 @@ export default function WomensHealthLab() {
                 <p className="font-display-lg text-on-surface text-lg font-semibold">
                   {activeExpId === 'pelvis'
                     ? 'Preparing pelvic anatomy & MRI scan...'
-                    : activeExpId === 'pregnancy'
+                    : activeExpId === 'fetus'
                     ? 'Preparing fetal position model...'
                     : 'Preparing reproductive system model...'}
                 </p>

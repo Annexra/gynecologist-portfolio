@@ -14,12 +14,15 @@ export default function UterusCanvas() {
 
     const scene = new THREE.Scene();
 
+    const isMobileInitial = window.innerWidth < 768;
+    const cameraZInitial = isMobileInitial ? 27 : 22;
+
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    camera.position.set(0, 0, 22);
+    camera.position.set(0, 0, cameraZInitial);
 
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
 
@@ -44,17 +47,17 @@ export default function UterusCanvas() {
 
     // Ambient Particles floating around Uterus
     const partGeo = new THREE.BufferGeometry();
-    const partCount = isMobile ? 120 : (prefersReducedMotion ? 100 : 300);
+    const partCount = isMobile ? 80 : (prefersReducedMotion ? 100 : 250);
     const posArray = new Float32Array(partCount * 3);
     for (let i = 0; i < partCount * 3; i++) {
-      posArray[i] = (Math.random() - 0.5) * 25;
+      posArray[i] = (Math.random() - 0.5) * (isMobile ? 18 : 25);
     }
     partGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
     const partMat = new THREE.PointsMaterial({
-      size: 0.08,
+      size: isMobile ? 0.06 : 0.08,
       color: 0xfe97b9,
       transparent: true,
-      opacity: 0.6,
+      opacity: isMobile ? 0.45 : 0.6,
       sizeAttenuation: true
     });
     const particles = new THREE.Points(partGeo, partMat);
@@ -80,18 +83,19 @@ export default function UterusCanvas() {
               if ('metalness' in child.material) child.material.metalness = 0.15;
               if ('emissive' in child.material) {
                 child.material.emissive = new THREE.Color(0x9d174d); // Warm deep pink glow
-                child.material.emissiveIntensity = 0.25;
+                child.material.emissiveIntensity = isMobile ? 0.18 : 0.25;
               }
             }
           }
         });
 
-        // Auto center and scale model bounding box
+        // Auto center and scale model bounding box responsively for mobile vs desktop
         const box = new THREE.Box3().setFromObject(uterusModel);
         const center = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
-        const scale = 10 / maxDim;
+        const targetScaleVal = isMobile ? 8.2 : 10;
+        const scale = targetScaleVal / maxDim;
 
         uterusModel.position.x = -center.x * scale;
         uterusModel.position.y = -center.y * scale;
@@ -150,7 +154,10 @@ export default function UterusCanvas() {
     const handleResize = () => {
       const w = container.clientWidth || window.innerWidth / 2;
       const h = container.clientHeight || window.innerHeight;
+      const isMob = window.innerWidth < 768;
+      
       camera.aspect = w / h;
+      camera.position.z = isMob ? 27 : 22;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
     };

@@ -2,7 +2,7 @@
  * Data configuration for Women's Health Lab interactive 3D experiences.
  * Experience 01: Female Reproductive System (female_reproductive_system.glb)
  * Experience 02: Inside The Pelvis (bony_pelvis_optimized.glb - Web Optimized 3.65 MB)
- * Experience 03: Pregnancy (baby_optimized.glb - Web Optimized 0.94 MB)
+ * Experience 03: Fetus (baby_optimized.glb - Web Optimized 0.94 MB)
  */
 
 export const EXPERIENCES_DATA = [
@@ -94,11 +94,11 @@ export const EXPERIENCES_DATA = [
     ]
   },
   {
-    id: 'pregnancy',
+    id: 'fetus',
     code: '03',
-    title: 'PREGNANCY',
+    title: 'FETUS',
     subtitle: 'Understanding Fetal Position',
-    description: 'Explore how fetal position and orientation relate to maternal pelvic anatomy.',
+    description: 'Explore the orientation and position of the fetus through an interactive 3D model.',
     modelPath: 'assets/models/baby_optimized.glb',
     defaultCameraPos: { x: 0, y: 0, z: 7.5 },
     isAvailable: true,
@@ -142,8 +142,8 @@ export const ATTRIBUTION_DATA = [
     license: "CC BY 4.0 Educational Usage"
   },
   {
-    experience: "Fetal Position & Pregnancy Visualization",
-    author: "Sketchfab 3D Model — Baby",
+    experience: "Fetal Position & Fetus Visualization",
+    author: "Sketchfab 3D Model — Fetus Asset",
     source: "Creative Commons Attribution License (CC BY 4.0 - Draco Web-Optimized Asset: 0.94 MB)",
     license: "CC BY 4.0 Educational Usage"
   }

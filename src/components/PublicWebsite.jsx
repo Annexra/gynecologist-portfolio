@@ -175,7 +175,7 @@ export default function PublicWebsite() {
             </div>
             
             <div className="w-full max-w-container-max mx-auto grid grid-cols-1 lg:grid-cols-12 gap-gutter items-center h-full">
-              <div className="lg:col-span-6 space-y-8 z-10 reveal-text" id="hero-content">
+              <div className="lg:col-span-6 space-y-8 z-10 reveal-text p-4 sm:p-6 lg:p-0 rounded-3xl bg-gradient-to-r from-surface/90 via-surface/75 to-transparent lg:bg-none backdrop-blur-[2px] lg:backdrop-blur-none" id="hero-content">
                 <span className="inline-block px-4 py-2 rounded-full bg-secondary-container text-on-secondary-container font-label-md uppercase tracking-wider text-xs font-semibold shadow-sm backdrop-blur-sm bg-opacity-80">
                   {profile?.title || 'Obstetrician & Gynaecologist'} | {profile?.clinic_name || 'IVF & Fertility Care'}
                 </span>
@@ -359,7 +359,12 @@ export default function PublicWebsite() {
           </section>
 
           {/* PATIENT APPROACH SECTION — HUMAN 4 PILLARS */}
-          <section className="py-section-gap px-margin bg-primary text-on-primary reveal-text relative overflow-hidden isolate" id="approach">
+          <section 
+            className="py-section-gap px-margin bg-primary text-on-primary reveal-text relative overflow-hidden isolate" 
+            id="approach"
+            onMouseEnter={() => document.body.classList.add('cursor-on-dark')}
+            onMouseLeave={() => document.body.classList.remove('cursor-on-dark')}
+          >
             <div className="absolute inset-0 flex items-center justify-center opacity-15 pointer-events-none overflow-hidden">
               <div className="w-[min(90vw,700px)] aspect-square rounded-full border border-on-primary animate-[pulse_10s_ease-in-out_infinite] flex-shrink-0" />
               <div className="absolute w-[min(65vw,500px)] aspect-square rounded-full border border-on-primary animate-[pulse_8s_ease-in-out_infinite_1.5s] flex-shrink-0" />
