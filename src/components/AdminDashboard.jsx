@@ -460,6 +460,7 @@ export default function AdminDashboard({ onLogout }) {
   const [practice, setPractice] = useState({});
   const [patientApproach, setPatientApproach] = useState([]);
   const [contact, setContact] = useState({});
+  const [labSettings, setLabSettings] = useState({ show_3d_lab: true });
 
   // UI Feedback
   const [statusMessage, setStatusMessage] = useState(null);
@@ -475,6 +476,7 @@ export default function AdminDashboard({ onLogout }) {
 
   const navTabs = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+    { id: 'womens_lab', label: "Women's Health Lab", icon: 'biotech' },
     { id: 'profile', label: 'Doctor Profile', icon: 'person' },
     { id: 'about', label: 'About Section', icon: 'info' },
     { id: 'care', label: 'Areas of Care', icon: 'child_care' },
@@ -490,14 +492,15 @@ export default function AdminDashboard({ onLogout }) {
 
   const loadAllData = async () => {
     try {
-      const [profData, aboutData, careData, eduData, practiceData, approachData, contactData] = await Promise.all([
+      const [profData, aboutData, careData, eduData, practiceData, approachData, contactData, labData] = await Promise.all([
         publicContentService.getDoctorProfile(),
         publicContentService.getAboutContent(),
         adminContentService.getAllCareAreas(),
         adminContentService.getAllEducation(),
         publicContentService.getPracticeDetails(),
         adminContentService.getAllPatientApproach(),
-        publicContentService.getContactDetails()
+        publicContentService.getContactDetails(),
+        publicContentService.getLabSettings()
       ]);
 
       setProfile(profData || {});
@@ -507,6 +510,7 @@ export default function AdminDashboard({ onLogout }) {
       setPractice(practiceData || {});
       setPatientApproach(approachData || []);
       setContact(contactData || {});
+      setLabSettings(labData || { show_3d_lab: true });
     } catch (err) {
       showNotice('Error loading CMS data', 'error');
     }
@@ -676,6 +680,26 @@ export default function AdminDashboard({ onLogout }) {
       showNotice('Contact details updated successfully! Live website updated.');
     } catch (err) {
       showNotice('Failed to update contact: ' + err.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Women's Health Lab 3D Toggle Save
+  const handleToggleLab = async (newValue) => {
+    setSaving(true);
+    try {
+      const updated = { show_3d_lab: newValue };
+      setLabSettings(updated);
+      await adminContentService.updateLabSettings(updated);
+      showNotice(
+        newValue 
+          ? "Women's Health Lab 3D section turned ON. Visible to clients!" 
+          : "Women's Health Lab 3D section turned OFF. Hidden from clients!", 
+        newValue ? 'success' : 'error'
+      );
+    } catch (err) {
+      showNotice('Failed to update 3D Lab settings: ' + err.message, 'error');
     } finally {
       setSaving(false);
     }
@@ -852,7 +876,16 @@ export default function AdminDashboard({ onLogout }) {
 
             <div className="bg-surface p-6 rounded-2xl border border-outline-variant/30 space-y-4">
               <h3 className="font-headline-sm text-lg text-primary">Quick Navigation</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <button onClick={() => setActiveTab('womens_lab')} className="p-4 rounded-xl bg-surface-container-low text-left hover:bg-surface-container transition-colors border border-outline-variant/20">
+                  <div className="flex items-center justify-between">
+                    <p className="font-label-md text-sm text-on-surface font-semibold">3D Health Lab</p>
+                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${labSettings.show_3d_lab ? 'bg-emerald-700 text-white' : 'bg-slate-700 text-white'}`}>
+                      {labSettings.show_3d_lab ? 'ON' : 'OFF'}
+                    </span>
+                  </div>
+                  <p className="font-body-sm text-xs text-on-surface-variant mt-1">Turn 3D model page div ON/OFF</p>
+                </button>
                 <button onClick={() => setActiveTab('profile')} className="p-4 rounded-xl bg-surface-container-low text-left hover:bg-surface-container transition-colors">
                   <p className="font-label-md text-sm text-on-surface">Edit Doctor Profile</p>
                   <p className="font-body-sm text-xs text-on-surface-variant mt-1">Name, qualifications, tagline</p>
@@ -1547,6 +1580,70 @@ export default function AdminDashboard({ onLogout }) {
                 {saving ? 'Saving...' : 'Save Contact Details'}
               </button>
             </form>
+          </div>
+        )}
+
+        {/* WOMEN'S HEALTH LAB TAB */}
+        {activeTab === 'womens_lab' && (
+          <div className="space-y-6">
+            <div>
+              <h1 className="font-display-lg text-primary text-3xl">Women's Health Lab (3D Models)</h1>
+              <p className="font-body-md text-on-surface-variant text-sm mt-1">
+                Control the visibility of the interactive 3D anatomy and fetal orientation models on the public client website.
+              </p>
+            </div>
+
+            <div className="bg-surface p-8 rounded-3xl border border-outline-variant/30 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 p-6 rounded-2xl bg-surface-container-low border border-outline-variant/30">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-2xl text-primary">view_in_ar</span>
+                    <h3 className="font-headline-sm text-lg text-on-surface font-bold">3D Model Page / Section Visibility</h3>
+                  </div>
+                  <p className="font-body-md text-on-surface-variant text-xs max-w-lg">
+                    Toggle this setting to show or hide the Women's Health Lab 3D interactive section and its navigation tab for website clients.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 shrink-0">
+                  <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold font-label-md uppercase tracking-wider shadow-sm ${
+                    labSettings.show_3d_lab 
+                      ? 'bg-emerald-700 text-white border border-emerald-800' 
+                      : 'bg-slate-700 text-white border border-slate-800'
+                  }`}>
+                    <span className={`w-2.5 h-2.5 rounded-full ${labSettings.show_3d_lab ? 'bg-emerald-300 animate-pulse' : 'bg-slate-400'}`} />
+                    <span>{labSettings.show_3d_lab ? 'VISIBLE ON WEBSITE (ON)' : 'HIDDEN FROM CLIENTS (OFF)'}</span>
+                  </span>
+
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => handleToggleLab(!labSettings.show_3d_lab)}
+                    className={`px-5 py-2.5 rounded-xl font-label-md text-xs font-bold flex items-center gap-2 transition-all shadow-sm active:scale-95 border ${
+                      labSettings.show_3d_lab
+                        ? 'bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100'
+                        : 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-base">
+                      {labSettings.show_3d_lab ? 'toggle_on' : 'toggle_off'}
+                    </span>
+                    <span>{labSettings.show_3d_lab ? 'Turn OFF 3D Lab' : 'Turn ON 3D Lab'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-surface-container-low/70 border border-outline-variant/20 space-y-2 text-xs text-on-surface-variant">
+                <p className="font-semibold text-on-surface flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-sm text-primary">info</span>
+                  <span>How Visibility Control Works:</span>
+                </p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li><strong>ON:</strong> The 3D Health Lab section and the "Health Lab" header navigation link are visible to all clients visiting the portfolio.</li>
+                  <li><strong>OFF:</strong> The entire 3D Health Lab section div is completely hidden, and the navigation link is omitted for a clean client experience.</li>
+                </ul>
+              </div>
+            </div>
           </div>
         )}
       </main>

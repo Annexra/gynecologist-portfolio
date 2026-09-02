@@ -11,19 +11,21 @@ export default function PublicWebsite() {
   const [practice, setPractice] = useState(null);
   const [patientApproach, setPatientApproach] = useState([]);
   const [contact, setContact] = useState(null);
+  const [show3DLab, setShow3DLab] = useState(true);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadAllContent() {
       try {
-        const [profData, aboutData, careData, eduData, practiceData, approachData, contactData] = await Promise.all([
+        const [profData, aboutData, careData, eduData, practiceData, approachData, contactData, labData] = await Promise.all([
           publicContentService.getDoctorProfile(),
           publicContentService.getAboutContent(),
           publicContentService.getCareAreas(),
           publicContentService.getEducation(),
           publicContentService.getPracticeDetails(),
           publicContentService.getPatientApproach(),
-          publicContentService.getContactDetails()
+          publicContentService.getContactDetails(),
+          publicContentService.getLabSettings()
         ]);
 
         setProfile(profData);
@@ -33,6 +35,9 @@ export default function PublicWebsite() {
         setPractice(practiceData);
         setPatientApproach(approachData);
         setContact(contactData);
+        if (labData && labData.show_3d_lab !== undefined) {
+          setShow3DLab(Boolean(labData.show_3d_lab));
+        }
       } catch (err) {
         console.error('Error fetching CMS content:', err);
       } finally {
@@ -45,12 +50,14 @@ export default function PublicWebsite() {
     window.addEventListener('cms_contact_updated', handleSync);
     window.addEventListener('cms_about_updated', handleSync);
     window.addEventListener('cms_profile_updated', handleSync);
+    window.addEventListener('cms_lab_updated', handleSync);
     window.addEventListener('storage', handleSync);
 
     return () => {
       window.removeEventListener('cms_contact_updated', handleSync);
       window.removeEventListener('cms_about_updated', handleSync);
       window.removeEventListener('cms_profile_updated', handleSync);
+      window.removeEventListener('cms_lab_updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
   }, []);
@@ -200,7 +207,9 @@ export default function PublicWebsite() {
             <a className="transition-colors text-primary font-semibold interactive-element text-sm" href="#top">Home</a>
             <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#about">About</a>
             <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#care-areas">Care Areas</a>
-            <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#health-lab">Health Lab</a>
+            {show3DLab && (
+              <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#health-lab">Health Lab</a>
+            )}
             <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#education">Education</a>
             <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#practice">Practice</a>
             <a className="font-label-md text-on-surface-variant hover:text-primary transition-colors interactive-element text-sm" href="#approach">Approach</a>
@@ -319,7 +328,7 @@ export default function PublicWebsite() {
           </section>
 
           {/* WOMEN'S HEALTH LAB INTERACTIVE 3D EXPERIENCE */}
-          <WomensHealthLab />
+          {show3DLab && <WomensHealthLab />}
 
           {/* EDUCATION & PRACTICE SECTION — JOURNEY & LAYERED DEPTH */}
           <section className="py-section-gap px-margin bg-surface-container-low border-y border-outline-variant/30">

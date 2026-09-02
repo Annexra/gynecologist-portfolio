@@ -60,6 +60,9 @@ const INITIAL_DATA = {
     email: 'contact@drthalluru.com',
     map_image_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDJ7sUBYZZGU8sNk6XdICTUPoKDWeT6Erbb7M12MD1qT7oTTkX0qfS1paLQy9s_uPaWxsqGY7KNVOA61gT8XsUjUwnRItiGVPLOarn6NldL6pFoNzY87EUPdGvChpks6IZDimOCP_EYB5vyWQoJyHr_YFIlOsCKjNTxMRlK-7pOmt4iioKDhVVmrMLPR3loQvFntt5Af_5vUGakOUK2t_wCa-xxZyT7KTZHLirr0z-p16Lo322bGraF',
     map_link: 'https://maps.google.com/maps?q=Level%204%2C%20Specialist%20Medical%20Centre%2C%20Perungudi%2C%20T.%20Nagar%2C%20Chennai%2C%20Tamil%20Nadu&t=&z=15&ie=UTF8&iwloc=&output=embed'
+  },
+  lab_settings: {
+    show_3d_lab: true
   }
 };
 
@@ -310,6 +313,19 @@ export const publicContentService = {
     } catch {
       return localData || INITIAL_DATA.contact_details;
     }
+  },
+
+  async getLabSettings() {
+    const saved = localStorage.getItem('dr_raveena_lab_settings');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return { show_3d_lab: parsed.show_3d_lab !== undefined ? Boolean(parsed.show_3d_lab) : true };
+      } catch (e) {
+        return INITIAL_DATA.lab_settings;
+      }
+    }
+    return INITIAL_DATA.lab_settings;
   }
 };
 
@@ -507,5 +523,13 @@ export const adminContentService = {
 
     const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
     return { success: true, url: data.publicUrl };
+  },
+
+  // Women's Health Lab Settings
+  async updateLabSettings(settings) {
+    const payload = { show_3d_lab: Boolean(settings?.show_3d_lab) };
+    localStorage.setItem('dr_raveena_lab_settings', JSON.stringify(payload));
+    window.dispatchEvent(new Event('cms_lab_updated'));
+    return { success: true, data: payload };
   }
 };
