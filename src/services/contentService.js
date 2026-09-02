@@ -269,13 +269,15 @@ export const publicContentService = {
   },
 
   async getPracticeDetails() {
-    if (!isSupabaseConfigured()) return INITIAL_DATA.practice_details;
+    const saved = localStorage.getItem('dr_raveena_practice_details');
+    const localData = saved ? JSON.parse(saved) : null;
+    if (!isSupabaseConfigured()) return localData || INITIAL_DATA.practice_details;
     try {
       const { data, error } = await supabase.from('practice_details').select('*').single();
-      if (error || !data) return INITIAL_DATA.practice_details;
-      return data;
+      if (error || !data) return localData || INITIAL_DATA.practice_details;
+      return { ...data, ...(localData || {}) };
     } catch {
-      return INITIAL_DATA.practice_details;
+      return localData || INITIAL_DATA.practice_details;
     }
   },
 
@@ -427,6 +429,8 @@ export const adminContentService = {
 
   // Practice Details
   async updatePracticeDetails(practice) {
+    localStorage.setItem('dr_raveena_practice_details', JSON.stringify(practice));
+    window.dispatchEvent(new Event('cms_practice_updated'));
     if (!isSupabaseConfigured()) return { success: true, localOnly: true };
     try {
       const { data, error } = await supabase.from('practice_details').upsert(practice).select();
