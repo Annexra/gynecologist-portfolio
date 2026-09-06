@@ -625,13 +625,31 @@ export default function AdminDashboard({ onLogout }) {
     }
   };
 
-  // Practice Save
+  // Practice Save & Locations Management
+  const handleAddPracticeLocation = () => {
+    const currentLocs = Array.isArray(practice.locations) ? practice.locations : [];
+    setPractice({
+      ...practice,
+      locations: [...currentLocs, { name: '', city: '' }]
+    });
+  };
+
+  const handleRemovePracticeLocation = (index) => {
+    const currentLocs = Array.isArray(practice.locations) ? practice.locations : [];
+    const updatedLocs = currentLocs.filter((_, idx) => idx !== index);
+    setPractice({
+      ...practice,
+      locations: updatedLocs
+    });
+  };
+
   const handleSavePractice = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
       await adminContentService.updatePracticeDetails(practice);
-      showNotice('Current Practice details updated!');
+      window.dispatchEvent(new Event('cms_practice_updated'));
+      showNotice('Current Practice details updated successfully! Live website updated.');
     } catch (err) {
       showNotice('Failed to update practice details: ' + err.message, 'error');
     } finally {
@@ -841,7 +859,7 @@ export default function AdminDashboard({ onLogout }) {
               <div className="bg-surface p-6 rounded-2xl border border-outline-variant/30 space-y-2">
                 <span className="material-symbols-outlined text-tertiary text-3xl">local_hospital</span>
                 <p className="font-label-md text-xs uppercase tracking-wider text-on-surface-variant">Clinic Locations</p>
-                <p className="font-headline-lg text-2xl text-on-surface">{practice?.locations?.length || 2} Clinics</p>
+                <p className="font-headline-lg text-2xl text-on-surface">{practice?.locations ? practice.locations.length : 0} Clinics</p>
               </div>
               <div className="bg-surface p-6 rounded-2xl border border-outline-variant/30 space-y-2">
                 <span className="material-symbols-outlined text-primary text-3xl">verified_user</span>
@@ -1272,37 +1290,86 @@ export default function AdminDashboard({ onLogout }) {
               </div>
 
               <div className="space-y-4">
-                <label className="font-label-md text-xs uppercase font-semibold text-on-surface">Clinic Locations</label>
-                {(practice.locations || []).map((loc, idx) => (
-                  <div key={idx} className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-surface-container-low border">
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold text-on-surface-variant">Location Name</label>
-                      <input
-                        type="text"
-                        value={loc.name || ''}
-                        onChange={e => {
-                          const locs = [...(practice.locations || [])];
-                          locs[idx] = { ...locs[idx], name: e.target.value };
-                          setPractice({ ...practice, locations: locs });
-                        }}
-                        className="w-full px-3 py-2 rounded-xl bg-surface border text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold text-on-surface-variant">City</label>
-                      <input
-                        type="text"
-                        value={loc.city || ''}
-                        onChange={e => {
-                          const locs = [...(practice.locations || [])];
-                          locs[idx] = { ...locs[idx], city: e.target.value };
-                          setPractice({ ...practice, locations: locs });
-                        }}
-                        className="w-full px-3 py-2 rounded-xl bg-surface border text-sm"
-                      />
-                    </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="font-label-md text-xs uppercase font-semibold text-on-surface">Clinic Locations</label>
+                    <p className="text-[11px] text-on-surface-variant">Add or remove practice locations visible on the website.</p>
                   </div>
-                ))}
+                  <button
+                    type="button"
+                    onClick={handleAddPracticeLocation}
+                    className="px-3.5 py-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-on-primary rounded-xl font-label-md text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs"
+                  >
+                    <span className="material-symbols-outlined text-sm">add_location_alt</span>
+                    <span>Add Location</span>
+                  </button>
+                </div>
+
+                {(!practice.locations || practice.locations.length === 0) ? (
+                  <div className="p-6 text-center rounded-2xl bg-surface-container-low border border-dashed border-outline-variant/60 space-y-2">
+                    <span className="material-symbols-outlined text-3xl text-on-surface-variant/60">location_off</span>
+                    <p className="text-xs text-on-surface-variant font-medium">No locations added yet.</p>
+                    <button
+                      type="button"
+                      onClick={handleAddPracticeLocation}
+                      className="px-4 py-2 bg-primary text-on-primary rounded-xl font-label-md text-xs font-bold shadow-xs hover:opacity-95 transition-all inline-flex items-center gap-1.5"
+                    >
+                      <span className="material-symbols-outlined text-sm">add</span>
+                      <span>Add First Location</span>
+                    </button>
+                  </div>
+                ) : (
+                  (practice.locations || []).map((loc, idx) => (
+                    <div key={idx} className="p-4 sm:p-5 rounded-2xl bg-surface-container-low border border-outline-variant/30 space-y-3 relative group">
+                      <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-sm text-primary">location_on</span>
+                          <span className="text-xs font-bold text-on-surface uppercase tracking-wider">Location #{idx + 1}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePracticeLocation(idx)}
+                          className="px-2.5 py-1 rounded-lg text-xs font-semibold text-error hover:bg-error-container/60 transition-colors flex items-center gap-1"
+                          title="Remove location"
+                        >
+                          <span className="material-symbols-outlined text-sm">delete</span>
+                          <span>Remove</span>
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-xs font-semibold text-on-surface-variant">Location Name</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Perungudi Clinic or LIVF Medical Center"
+                            value={loc.name || ''}
+                            onChange={e => {
+                              const locs = [...(practice.locations || [])];
+                              locs[idx] = { ...locs[idx], name: e.target.value };
+                              setPractice({ ...practice, locations: locs });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl bg-surface border border-outline-variant/50 text-sm text-on-surface focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-semibold text-on-surface-variant">City / Area</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Chennai"
+                            value={loc.city || ''}
+                            onChange={e => {
+                              const locs = [...(practice.locations || [])];
+                              locs[idx] = { ...locs[idx], city: e.target.value };
+                              setPractice({ ...practice, locations: locs });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl bg-surface border border-outline-variant/50 text-sm text-on-surface focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
 
               <button

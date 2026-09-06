@@ -45,12 +45,14 @@ export default function PublicWebsite() {
     window.addEventListener('cms_contact_updated', handleSync);
     window.addEventListener('cms_about_updated', handleSync);
     window.addEventListener('cms_profile_updated', handleSync);
+    window.addEventListener('cms_practice_updated', handleSync);
     window.addEventListener('storage', handleSync);
 
     return () => {
       window.removeEventListener('cms_contact_updated', handleSync);
       window.removeEventListener('cms_about_updated', handleSync);
       window.removeEventListener('cms_profile_updated', handleSync);
+      window.removeEventListener('cms_practice_updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
   }, []);
