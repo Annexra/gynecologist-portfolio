@@ -62,7 +62,7 @@ const INITIAL_DATA = {
     map_link: 'https://maps.google.com/maps?q=Level%204%2C%20Specialist%20Medical%20Centre%2C%20Perungudi%2C%20T.%20Nagar%2C%20Chennai%2C%20Tamil%20Nadu&t=&z=15&ie=UTF8&iwloc=&output=embed'
   },
   lab_settings: {
-    show_3d_lab: true
+    show_3d_lab: false
   }
 };
 
@@ -322,7 +322,7 @@ export const publicContentService = {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        return { show_3d_lab: parsed.show_3d_lab !== undefined ? Boolean(parsed.show_3d_lab) : true };
+        return { show_3d_lab: parsed.show_3d_lab !== undefined ? Boolean(parsed.show_3d_lab) : false };
       } catch (e) {
         return INITIAL_DATA.lab_settings;
       }

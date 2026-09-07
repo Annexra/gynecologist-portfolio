@@ -1,4 +1,6 @@
-/* Custom Styles & Animation Overlay for Dr. Raveena Thalluru Portfolio */
+:root {
+  --font-bricolage: 'Bricolage Grotesque', sans-serif;
+}
 
 @layer base {
   html, body {
@@ -9,6 +11,11 @@
   }
   main > :first-child { margin-top: 0 !important; }
   main > :last-child { margin-bottom: 0 !important; }
+}
+
+/* Bricolage Grotesque Font Helper Utilities */
+.font-bricolage {
+  font-family: var(--font-bricolage), sans-serif;
 }
 
 ::-webkit-scrollbar {

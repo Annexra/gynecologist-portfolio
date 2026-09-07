@@ -460,7 +460,7 @@ export default function AdminDashboard({ onLogout }) {
   const [practice, setPractice] = useState({});
   const [patientApproach, setPatientApproach] = useState([]);
   const [contact, setContact] = useState({});
-  const [labSettings, setLabSettings] = useState({ show_3d_lab: true });
+  const [labSettings, setLabSettings] = useState({ show_3d_lab: false });
 
   // UI Feedback
   const [statusMessage, setStatusMessage] = useState(null);
@@ -510,7 +510,7 @@ export default function AdminDashboard({ onLogout }) {
       setPractice(practiceData || {});
       setPatientApproach(approachData || []);
       setContact(contactData || {});
-      setLabSettings(labData || { show_3d_lab: true });
+      setLabSettings(labData || { show_3d_lab: false });
     } catch (err) {
       showNotice('Error loading CMS data', 'error');
     }

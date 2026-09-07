@@ -11,7 +11,7 @@ export default function PublicWebsite() {
   const [practice, setPractice] = useState(null);
   const [patientApproach, setPatientApproach] = useState([]);
   const [contact, setContact] = useState(null);
-  const [show3DLab, setShow3DLab] = useState(true);
+  const [show3DLab, setShow3DLab] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
