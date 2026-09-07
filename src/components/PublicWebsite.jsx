@@ -143,11 +143,18 @@ export default function PublicWebsite() {
           // Dedicated About Section Image Parallax
           const aboutImg = document.querySelector('.about-parallax-img');
           if (aboutImg) {
+            const isMobile = window.innerWidth < 768;
             const rect = aboutImg.getBoundingClientRect();
             if (rect.top < vh && rect.bottom > 0) {
-              const centerDist = (rect.top + rect.height / 2) - (vh / 2);
-              const translateY = centerDist * 0.075; // Smooth parallax movement inside clipped container
-              aboutImg.style.transform = `scale(1.15) translate3d(0, ${translateY.toFixed(2)}px, 0)`;
+              if (isMobile) {
+                // On mobile screens, keep transform steady to prevent white gap overflow
+                aboutImg.style.transform = 'scale(1.15) translate3d(0, 0, 0)';
+              } else {
+                const centerDist = (rect.top + rect.height / 2) - (vh / 2);
+                // Clamp translateY between -10px and +10px so scale(1.2) buffer is never exceeded
+                const translateY = Math.max(-10, Math.min(10, centerDist * 0.03));
+                aboutImg.style.transform = `scale(1.2) translate3d(0, ${translateY.toFixed(2)}px, 0)`;
+              }
             }
           }
 
@@ -170,7 +177,7 @@ export default function PublicWebsite() {
   if (loading) {
     return (
       <div id="loader" className="fixed inset-0 bg-[#fff8f7] z-[99999] flex flex-col justify-center items-center gap-4">
-        <div class="pulse-ring w-[70px] h-[70px] rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
+        <div className="pulse-ring w-[70px] h-[70px] rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
           <span className="material-symbols-outlined text-primary text-3xl">favorite</span>
         </div>
         <span className="font-headline-sm text-primary text-xl">Loading Dr. Raveena Thalluru...</span>
@@ -248,8 +255,16 @@ export default function PublicWebsite() {
             <div className="absolute top-0 right-0 w-64 h-64 bg-secondary-fixed opacity-40 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
             <div className="w-full max-w-container-max mx-auto grid grid-cols-1 lg:grid-cols-12 gap-stack-lg items-center">
               <div className="lg:col-span-5 lg:col-start-2 relative">
-                <div className="aspect-square rounded-3xl overflow-hidden shadow-xl reveal-mask border border-outline-variant/30 subtle-card-glow relative">
-                  <img className="w-full h-full object-cover about-parallax-img scale-110 transition-transform duration-150 ease-out" alt={profile?.name || 'Dr. Raveena Thalluru'} src={about?.photo_url || profile?.photo_url || 'assets/dr_raveena.jpeg'} />
+                <div className="aspect-square rounded-3xl overflow-hidden shadow-xl reveal-mask border border-outline-variant/30 subtle-card-glow relative bg-surface-container-high">
+                  <img
+                    className="w-full h-full object-cover about-parallax-img scale-110 transition-transform duration-200 ease-out"
+                    alt={profile?.name || 'Dr. Raveena Thalluru'}
+                    src={about?.photo_url || profile?.photo_url || '/assets/dr_raveena.jpeg'}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/assets/dr_raveena.jpeg';
+                    }}
+                  />
                 </div>
                 {/* BRAND SIGNATURE SYMBOL EMBLEM */}
                 <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-primary text-on-primary rounded-full flex flex-col items-center justify-center shadow-xl brand-signature cursor-pointer timeline-node interactive-element">
